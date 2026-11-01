@@ -48,6 +48,19 @@ Want an executable? The build script runs the tests and publishes to `dist/win-x
 
 Use `-Runtime win-arm64` when building for Windows on ARM.
 
+## Let Puffling remind you
+
+Puffling can read your **Outlook calendar** and **Microsoft To Do** lists through Microsoft Graph. At your chosen local time, it shows a short bubble with your open to-dos. It also gives you a heads-up before timed events in your default calendar. Reminders appear beside Puffling while the app is running; the bubble closes on its own after a few seconds.
+
+To connect your account:
+
+1. [Register an application in Microsoft Entra](https://learn.microsoft.com/en-us/graph/auth-register-app-v2). Choose **Accounts in any organizational directory and personal Microsoft accounts** if you want to use either a work account or Outlook.com.
+2. Add a **Mobile and desktop applications** platform with the redirect URI `http://localhost`. Copy the **Application (client) ID**. You do not need a client secret.
+3. Under **API permissions**, add delegated Microsoft Graph permissions **Calendars.ReadBasic** and **Tasks.Read**. Your organization may require an administrator to approve them.
+4. Open **Puffling Settings → Microsoft reminders**, paste the client ID, choose a daily time (`HH:mm`) and an event lead time (1–120 minutes), then click **Connect Microsoft**. Finish sign-in in your browser.
+
+Puffling checks for updates every five minutes. The daily bubble lists up to three open tasks and counts any others; event reminders default to 15 minutes before the start. You can turn reminders off or disconnect in the same window. The app requests read-only access, stores its sign-in cache encrypted for your Windows user in `%LOCALAPPDATA%\Puffling`, and never puts account tokens in `settings.json`.
+
 ## How to say hello
 
 | You | Puffling |

@@ -29,6 +29,10 @@ public sealed class CompanionSettings
     public bool PerformanceMode { get; set; }
     public bool HideInFullscreen { get; set; } = true;
     public bool FreezePosition { get; set; }
+    public bool MicrosoftReminders { get; set; }
+    public string MicrosoftClientId { get; set; } = "";
+    public string DailyReminderTime { get; set; } = "09:00";
+    public int EventReminderMinutes { get; set; } = 15;
 
     /// <summary>Last centre position in physical px (validated against monitors at startup).</summary>
     public float? LastX { get; set; }
@@ -43,6 +47,9 @@ public sealed class CompanionSettings
         AnimationIntensity = ClampF(AnimationIntensity, 0.3f, 1.5f, 1f);
         ActivityFrequency = ClampF(ActivityFrequency, 0.2f, 2f, 1f);
         FpsLimit = Math.Clamp(FpsLimit, 10, 60);
+        MicrosoftClientId = Guid.TryParse(MicrosoftClientId, out var id) ? id.ToString() : "";
+        if (!TimeOnly.TryParseExact(DailyReminderTime, "HH:mm", out _)) DailyReminderTime = "09:00";
+        EventReminderMinutes = Math.Clamp(EventReminderMinutes, 1, 120);
         if (LastX is { } x && !float.IsFinite(x)) LastX = null;
         if (LastY is { } y && !float.IsFinite(y)) LastY = null;
         return this;

@@ -70,6 +70,7 @@ public static class Win32
     public const uint WM_NULL = 0x0000, WM_CREATE = 0x0001, WM_DESTROY = 0x0002, WM_CLOSE = 0x0010, WM_QUERYENDSESSION = 0x0011,
         WM_ENDSESSION = 0x0016, WM_SETTINGCHANGE = 0x001A, WM_SETCURSOR = 0x0020, WM_MOUSEACTIVATE = 0x0021, WM_SETFONT = 0x0030,
         WM_DISPLAYCHANGE = 0x007E, WM_COMMAND = 0x0111, WM_TIMER = 0x0113, WM_HSCROLL = 0x0114,
+        WM_CTLCOLORSTATIC = 0x0138,
         WM_MOUSEMOVE = 0x0200, WM_LBUTTONDOWN = 0x0201, WM_LBUTTONUP = 0x0202, WM_LBUTTONDBLCLK = 0x0203,
         WM_RBUTTONUP = 0x0205, WM_CAPTURECHANGED = 0x0215, WM_POWERBROADCAST = 0x0218, WM_DPICHANGED = 0x02E0,
         WM_MOUSELEAVE = 0x02A3, WM_USER = 0x0400, WM_APP = 0x8000;
@@ -112,7 +113,8 @@ public static class Win32
     public const uint TBM_GETPOS = WM_USER, TBM_SETPOS = WM_USER + 5, TBM_SETRANGE = WM_USER + 6, TBM_SETPAGESIZE = WM_USER + 21;
     public const uint TBS_HORZ = 0x0, TBS_NOTICKS = 0x10;
     public const uint ICC_BAR_CLASSES = 0x4, ICC_STANDARD_CLASSES = 0x4000;
-    public const uint SS_LEFT = 0x0;
+    public const uint SS_LEFT = 0x0, ES_AUTOHSCROLL = 0x80, WS_BORDER = 0x00800000;
+    public const uint EN_KILLFOCUS = 0x0200;
     public const int COLOR_BTNFACE = 15;
 
     // ---- monitors / DPI
@@ -133,6 +135,12 @@ public static class Win32
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hwnd, out RECT r);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern bool SetWindowTextW(IntPtr hwnd, string text);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowTextW(IntPtr hwnd, System.Text.StringBuilder text, int max);
+    [DllImport("user32.dll")] public static extern bool SetWindowRgn(IntPtr hwnd, IntPtr region, bool redraw);
+    [DllImport("gdi32.dll")] public static extern IntPtr CreateRoundRectRgn(int left, int top, int right, int bottom, int ellipseWidth, int ellipseHeight);
+    [DllImport("gdi32.dll")] public static extern IntPtr CreateSolidBrush(uint color);
+    [DllImport("gdi32.dll")] public static extern uint SetTextColor(IntPtr hdc, uint color);
+    [DllImport("gdi32.dll")] public static extern uint SetBkColor(IntPtr hdc, uint color);
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr GetWindowLongPtr64(IntPtr hwnd, int index);
     [DllImport("user32.dll", EntryPoint = "GetWindowLongW")] private static extern int GetWindowLong32(IntPtr hwnd, int index);
     public static long GetWindowStyle(IntPtr hwnd) => IntPtr.Size == 8 ? GetWindowLongPtr64(hwnd, GWL_STYLE).ToInt64() : GetWindowLong32(hwnd, GWL_STYLE);

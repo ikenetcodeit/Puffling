@@ -12,7 +12,7 @@ namespace Puffling.App.Windows;
 public sealed class SettingsWindow : NativeWindow
 {
     private const string ClassName = "Puffling.Settings";
-    private const int SliderBase = 100, CheckBase = 200, BtnReset = 300, BtnExit = 301, BtnClose = 302;
+    private const int SliderBase = 100, CheckBase = 200, BtnReset = 300, BtnExit = 301, BtnClose = 302, BtnMicrosoft = 303;
 
     private sealed record SliderDef(string Label, int Min, int Max, Func<CompanionSettings, int> Get, Action<CompanionSettings, int> Set, Func<int, string> Format);
     private sealed record CheckDef(string Label, Func<CompanionSettings, bool> Get, Action<CompanionSettings, bool> Set);
@@ -41,7 +41,7 @@ public sealed class SettingsWindow : NativeWindow
     };
 
     private readonly Action<CompanionSettings> _onChanged;
-    private readonly Action _onReset, _onExit, _onClosed;
+    private readonly Action _onReset, _onExit, _onClosed, _onMicrosoft;
     private readonly IntPtr[] _sliderHwnds = new IntPtr[Sliders.Length];
     private readonly IntPtr[] _labelHwnds = new IntPtr[Sliders.Length];
     private readonly IntPtr[] _checkHwnds = new IntPtr[Checks.Length];
@@ -49,10 +49,10 @@ public sealed class SettingsWindow : NativeWindow
     private IntPtr _font;
     private bool _syncing;
 
-    public SettingsWindow(CompanionSettings settings, Action<CompanionSettings> onChanged, Action onReset, Action onExit, Action onClosed)
+    public SettingsWindow(CompanionSettings settings, Action<CompanionSettings> onChanged, Action onReset, Action onExit, Action onClosed, Action onMicrosoft)
     {
         _settings = settings.Clone();
-        _onChanged = onChanged; _onReset = onReset; _onExit = onExit; _onClosed = onClosed;
+        _onChanged = onChanged; _onReset = onReset; _onExit = onExit; _onClosed = onClosed; _onMicrosoft = onMicrosoft;
 
         var icc = new INITCOMMONCONTROLSEX { dwSize = 8, dwICC = ICC_BAR_CLASSES | ICC_STANDARD_CLASSES };
         InitCommonControlsEx(ref icc);
@@ -60,7 +60,7 @@ public sealed class SettingsWindow : NativeWindow
 
         uint dpi = GetDpiForSystem();
         int S(int v) => v * (int)dpi / 96;
-        int width = S(400), height = S(40) + S(56) * Sliders.Length + S(26) * Checks.Length + S(110);
+        int width = S(400), height = S(40) + S(56) * Sliders.Length + S(26) * Checks.Length + S(142);
         Create(ClassName, "Puffling settings", WS_EX_CONTROLPARENT | WS_EX_DLGMODALFRAME, WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
                CW_USEDEFAULT, CW_USEDEFAULT, width, height, IntPtr.Zero);
 
@@ -82,6 +82,8 @@ public sealed class SettingsWindow : NativeWindow
             y += S(26);
         }
         y += S(12);
+        Child("BUTTON", "Microsoft reminders...", BS_PUSHBUTTON | WS_TABSTOP, x, y, w, S(28), BtnMicrosoft);
+        y += S(36);
         int bw = S(110);
         Child("BUTTON", "Reset position", BS_PUSHBUTTON | WS_TABSTOP, x, y, bw, S(28), BtnReset);
         Child("BUTTON", "Exit Puffling", BS_PUSHBUTTON | WS_TABSTOP, x + bw + S(10), y, bw, S(28), BtnExit);
@@ -152,6 +154,7 @@ public sealed class SettingsWindow : NativeWindow
                     Commit(next);
                 }
                 else if (id == BtnReset) _onReset();
+                else if (id == BtnMicrosoft) _onMicrosoft();
                 else if (id == BtnExit) _onExit();
                 else if (id == BtnClose || id == 2 /* IDCANCEL via Esc */) DestroyWindow(Handle);
                 return IntPtr.Zero;

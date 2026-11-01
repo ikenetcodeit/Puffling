@@ -38,6 +38,8 @@ internal static class Program
                 // Lets Tab / Esc / Enter work inside the settings panel.
                 IntPtr dlg = app.SettingsWindowHandle;
                 if (dlg != IntPtr.Zero && IsDialogMessageW(dlg, ref msg)) continue;
+                dlg = app.MicrosoftSettingsWindowHandle;
+                if (dlg != IntPtr.Zero && IsDialogMessageW(dlg, ref msg)) continue;
                 TranslateMessage(ref msg);
                 DispatchMessageW(ref msg);
             }

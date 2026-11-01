@@ -1,11 +1,14 @@
 using System.Diagnostics;
 using System.Numerics;
+using System.Collections.Concurrent;
+using Puffling.App.Microsoft;
 using Puffling.App.Native;
 using Puffling.App.Platform;
 using Puffling.App.Windows;
 using Puffling.Core;
 using Puffling.Core.Behavior;
 using Puffling.Core.Movement;
+using Puffling.Core.Reminders;
 using Puffling.Core.Settings;
 using static Puffling.App.Native.Win32;
 
@@ -24,6 +27,7 @@ public sealed class CompanionApp : NativeWindow, IDisposable
 {
     private const string ClassName = "Puffling.Controller";
     private static readonly IntPtr FrameTimer = (IntPtr)1;
+    private const uint UiWorkMessage = WM_APP + 2;
 
     private enum Cmd
     {
@@ -35,6 +39,18 @@ public sealed class CompanionApp : NativeWindow, IDisposable
     private readonly Companion _companion;
     private readonly OverlayWindow _overlay;
     private readonly TrayIcon _tray;
+    private readonly SpeechBubbleWindow _bubble;
+    private readonly ConcurrentQueue<Action> _uiWork = new();
+    private readonly Queue<string> _bubbleMessages = new();
+    private readonly ReminderPlanner _reminderPlanner = new();
+    private MicrosoftRemindersClient? _microsoft;
+    private ReminderSnapshot? _reminderSnapshot;
+    private MicrosoftSettingsWindow? _microsoftWindow;
+    private DateTimeOffset _lastMicrosoftFetch = DateTimeOffset.MinValue;
+    private bool _microsoftFetching, _microsoftConnecting;
+    private bool _microsoftErrorNotified;
+    private string? _activeBubble;
+    private double _bubbleUntil;
     private readonly uint _taskbarCreated;
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private SettingsWindow? _settingsWindow;
@@ -47,6 +63,7 @@ public sealed class CompanionApp : NativeWindow, IDisposable
     private int _consecutiveFrameErrors;
 
     public IntPtr SettingsWindowHandle => _settingsWindow?.Handle ?? IntPtr.Zero;
+    public IntPtr MicrosoftSettingsWindowHandle => _microsoftWindow?.Handle ?? IntPtr.Zero;
 
     public CompanionApp()
     {
@@ -65,6 +82,8 @@ public sealed class CompanionApp : NativeWindow, IDisposable
         _lastSavedPos = _companion.Position;
 
         _overlay = new OverlayWindow(Handle, _companion.Pointer, Now, ShowContextMenu, _settings.AlwaysOnTop);
+        _bubble = new SpeechBubbleWindow(Handle, _settings.AlwaysOnTop);
+        if (_settings.MicrosoftClientId.Length > 0) _microsoft = new MicrosoftRemindersClient(_settings.MicrosoftClientId);
         _tray = new TrayIcon(Handle);
         _tray.Show(Tooltip());
 
@@ -84,6 +103,7 @@ public sealed class CompanionApp : NativeWindow, IDisposable
         _lastFrame = now;
 
         if (now - _lastHousekeeping >= 1.0) Housekeeping(now);
+        UpdateBubble(now);
         if (_hiddenForFullscreen) return;
 
         GetCursorPos(out var cp);
@@ -91,6 +111,7 @@ public sealed class CompanionApp : NativeWindow, IDisposable
         _companion.Tick(dt, input);
         var r = _companion.Render();
         _overlay.Present(r.Frame, r.Left, r.Top);
+        if (_activeBubble != null) _bubble.MoveNear(_companion.Position, _companion.Brain.Geometry.MonitorAt(_companion.Position));
 
         SetFrameInterval();
         _consecutiveFrameErrors = 0;
@@ -105,7 +126,7 @@ public sealed class CompanionApp : NativeWindow, IDisposable
         if (fs != _hiddenForFullscreen)
         {
             _hiddenForFullscreen = fs;
-            if (fs) _overlay.Hide();
+            if (fs) { _overlay.Hide(); _bubble.Hide(); }
             Log.Info(fs ? "Fullscreen app detected: hiding and idling." : "Fullscreen app gone: resuming.");
             _lastFrame = Now(); // don't feed a huge dt after resuming
             SetFrameInterval();
@@ -132,6 +153,58 @@ public sealed class CompanionApp : NativeWindow, IDisposable
         var pos = _companion.Position;
         if (Vector2.Distance(pos, _lastSavedPos) > 2f && now - _lastSave > 30.0) _settingsDirty = true;
         if (_settingsDirty && now - _lastSave > 2.0) Save();
+        CheckMicrosoftReminders();
+    }
+
+    private void QueueOnUi(Action action)
+    {
+        if (_exiting) return;
+        _uiWork.Enqueue(action);
+        PostMessageW(Handle, UiWorkMessage, IntPtr.Zero, IntPtr.Zero);
+    }
+
+    private void Say(string message) => _bubbleMessages.Enqueue(message);
+
+    private void UpdateBubble(double now)
+    {
+        if (_activeBubble != null && now >= _bubbleUntil) { _bubble.Hide(); _activeBubble = null; }
+        if (_hiddenForFullscreen || _activeBubble != null || _bubbleMessages.Count == 0) return;
+        _activeBubble = _bubbleMessages.Dequeue();
+        _bubbleUntil = now + 12;
+        _bubble.Show(_activeBubble, _companion.Position, _companion.Brain.Geometry.MonitorAt(_companion.Position));
+    }
+
+    private void CheckMicrosoftReminders()
+    {
+        if (!_settings.MicrosoftReminders || _microsoft == null) return;
+        var now = DateTimeOffset.Now;
+        if (!_microsoftFetching && now - _lastMicrosoftFetch >= TimeSpan.FromMinutes(5))
+        {
+            _microsoftFetching = true;
+            _lastMicrosoftFetch = now;
+            var client = _microsoft;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var snapshot = await client.FetchAsync(DateTimeOffset.Now);
+                    QueueOnUi(() => { if (_microsoft == client) { _reminderSnapshot = snapshot; _microsoftErrorNotified = false; _microsoftWindow?.SetStatus("Connected · reminders are active."); } _microsoftFetching = false; });
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("Microsoft reminders refresh failed", ex);
+                    QueueOnUi(() =>
+                    {
+                        _microsoftFetching = false;
+                        _reminderSnapshot = null;
+                        _microsoftWindow?.SetStatus("Could not refresh. Check your sign-in and connection.");
+                        if (!_microsoftErrorNotified) { Say("I couldn't check Microsoft reminders. Please reconnect in Settings."); _microsoftErrorNotified = true; }
+                    });
+                }
+            });
+        }
+        if (_reminderSnapshot is { } current)
+            foreach (string message in _reminderPlanner.Due(now, current, _settings.DailyReminderTime, _settings.EventReminderMinutes)) Say(message);
     }
 
     private void SetFrameInterval()
@@ -165,8 +238,25 @@ public sealed class CompanionApp : NativeWindow, IDisposable
         _settings = next.Normalize();
         _companion.ApplySettings(_settings.Clone());
         if (prev.AlwaysOnTop != _settings.AlwaysOnTop) _overlay.SetTopmost(_settings.AlwaysOnTop);
+        if (prev.AlwaysOnTop != _settings.AlwaysOnTop) _bubble.SetTopmost(_settings.AlwaysOnTop);
+        if (prev.MicrosoftClientId != _settings.MicrosoftClientId)
+        {
+            _microsoft = _settings.MicrosoftClientId.Length > 0 ? new MicrosoftRemindersClient(_settings.MicrosoftClientId) : null;
+            _reminderSnapshot = null;
+            _lastMicrosoftFetch = DateTimeOffset.MinValue;
+            _microsoftErrorNotified = false;
+        }
+        if (prev.MicrosoftReminders && !_settings.MicrosoftReminders)
+        {
+            _reminderSnapshot = null;
+            _bubbleMessages.Clear();
+            _activeBubble = null;
+            _bubble.Hide();
+        }
+        if (!prev.MicrosoftReminders && _settings.MicrosoftReminders) _lastMicrosoftFetch = DateTimeOffset.MinValue;
         if (prev.StartWithWindows != _settings.StartWithWindows) StartupRegistration.Apply(_settings.StartWithWindows);
         _settingsWindow?.Sync(_settings);
+        _microsoftWindow?.Sync(_settings);
         _tray.SetTooltip(Tooltip());
         _settingsDirty = true;
         SetFrameInterval();
@@ -261,7 +351,76 @@ public sealed class CompanionApp : NativeWindow, IDisposable
     private void OpenSettings()
     {
         if (_settingsWindow != null) { _settingsWindow.BringToFront(); return; }
-        _settingsWindow = new SettingsWindow(_settings, ApplySettings, ResetPosition, Exit, () => _settingsWindow = null);
+        _settingsWindow = new SettingsWindow(_settings, ApplySettings, ResetPosition, Exit, () => _settingsWindow = null, OpenMicrosoftSettings);
+    }
+
+    private void OpenMicrosoftSettings()
+    {
+        if (_microsoftWindow != null) { _microsoftWindow.BringToFront(); return; }
+        _microsoftWindow = new MicrosoftSettingsWindow(_settings, ApplySettings, ConnectMicrosoft, DisconnectMicrosoft,
+            () => Say("Hi! I'll remind you right here when something is coming up."),
+            () => _microsoftWindow = null);
+        if (_microsoft != null)
+        {
+            var client = _microsoft;
+            _ = Task.Run(async () =>
+            {
+                try { bool connected = await client.HasAccountAsync(); QueueOnUi(() => _microsoftWindow?.SetStatus(connected ? "Connected · reminders are ready." : "Enter an app ID, then connect your account.")); }
+                catch (Exception ex) { Log.Error("Microsoft account check failed", ex); }
+            });
+        }
+    }
+
+    private void ConnectMicrosoft()
+    {
+        if (_microsoftConnecting) return;
+        if (_microsoft == null) { _microsoftWindow?.SetStatus("Enter a valid Microsoft app (client) ID first."); return; }
+        _microsoftConnecting = true;
+        _microsoftWindow?.SetStatus("Finish signing in with your browser…");
+        var client = _microsoft;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                string user = await client.ConnectAsync();
+                QueueOnUi(() =>
+                {
+                    _microsoftConnecting = false;
+                    if (_microsoft != client) return;
+                    var next = _settings.Clone(); next.MicrosoftReminders = true; ApplySettings(next);
+                    _lastMicrosoftFetch = DateTimeOffset.MinValue;
+                    _microsoftWindow?.SetStatus($"Connected as {user}. Reminders are on.");
+                    Say("Microsoft is connected. I'll keep an eye on your day!");
+                });
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Microsoft sign-in failed", ex);
+                QueueOnUi(() => { _microsoftConnecting = false; _microsoftWindow?.SetStatus("Sign-in failed. Check the app ID and redirect URI."); });
+            }
+        });
+    }
+
+    private void DisconnectMicrosoft()
+    {
+        if (_microsoft == null) return;
+        var client = _microsoft;
+        _microsoftWindow?.SetStatus("Disconnecting…");
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await client.DisconnectAsync();
+                QueueOnUi(() =>
+                {
+                    if (_microsoft != client) return;
+                    var next = _settings.Clone(); next.MicrosoftReminders = false; ApplySettings(next);
+                    _reminderSnapshot = null;
+                    _microsoftWindow?.SetStatus("Disconnected. Reminders are off.");
+                });
+            }
+            catch (Exception ex) { Log.Error("Microsoft disconnect failed", ex); QueueOnUi(() => _microsoftWindow?.SetStatus("Could not disconnect. See puffling.log.")); }
+        });
     }
 
     public void Exit()
@@ -270,6 +429,7 @@ public sealed class CompanionApp : NativeWindow, IDisposable
         _exiting = true;
         Save();
         if (_settingsWindow != null) DestroyWindow(_settingsWindow.Handle);
+        if (_microsoftWindow != null) DestroyWindow(_microsoftWindow.Handle);
         DestroyWindow(Handle); // -> WM_DESTROY -> PostQuitMessage
     }
 
@@ -279,6 +439,9 @@ public sealed class CompanionApp : NativeWindow, IDisposable
     {
         switch (msg)
         {
+            case UiWorkMessage:
+                while (_uiWork.TryDequeue(out var action)) action();
+                return IntPtr.Zero;
             case WM_TIMER when wParam == FrameTimer:
                 try { OnFrame(); }
                 catch (Exception ex)
@@ -346,5 +509,7 @@ public sealed class CompanionApp : NativeWindow, IDisposable
     {
         _tray.Dispose();
         _overlay.Dispose();
+        _bubble.Dispose();
+        _microsoft?.Dispose();
     }
 }
