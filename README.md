@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="docs/previews/idle.gif" alt="Puffling floating gently" width="168">
+<img src="docs/previews/idle.gif" alt="A tiny Happy Ghast floating gently" width="168">
 
-# Puffling 🌱
+# Puffling ☁️
 
-### A little bit of life for your desktop.
+### A tiny Happy Ghast for your desktop.
 
-Puffling is a tiny mint-green voxel creature with a leaf on its head, a few wiggly tentacles, and a lot of feelings. It floats around your Windows desktop, notices you, gets playful, and eventually falls asleep.
+This `happy-ghast` branch gives Puffling a fan-made Minecraft Happy Ghast skin: a pale cube, smiling face, short dangling tentacles, leather harness, and raised blue goggles. It floats around your Windows desktop, notices you, gets playful, and eventually falls asleep.
 
 **Windows 10/11 · C# · .NET 8 · 48 px of personality by default**
 
@@ -99,4 +99,4 @@ The automated tests cover gestures, rendering bounds, movement, settings, and a 
   <em>One tiny face, a surprising number of moods.</em>
 </p>
 
-The character, textures, faces, and animations are original and generated in code. No game assets are included.
+This is an unofficial fan project and is not affiliated with Mojang or Microsoft. The Happy Ghast design belongs to Minecraft; this branch recreates its look procedurally without bundling game textures or models.

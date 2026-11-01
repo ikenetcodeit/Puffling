@@ -74,7 +74,7 @@ public sealed class CharacterRenderer
                             {
                                 var pose = Pose.Rest;
                                 pose.Yaw = yi * MathF.Tau / 24f; pose.Pitch = pitch; pose.Roll = roll; pose.Squash = sq;
-                                pose.SproutWiggle = wig;
+                                pose.GoggleWiggle = wig;
                                 model.Apply(pose, 0, seg);
                                 foreach (var part in model.Parts)
                                 {

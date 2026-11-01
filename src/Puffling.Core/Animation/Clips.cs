@@ -58,7 +58,7 @@ public static class Clips
             p.Pitch = 0.04f * MathF.Sin(t * 0.61f);
             // Occasional glances: the sum of two slow sines crosses +-0.5 only now and then.
             p.LookX = 0.9f * MathF.Sin(t * 0.29f + v) * MathF.Sin(t * 0.17f + 1f);
-            p.SproutWiggle = 0.14f * MathF.Sin(t * 1.7f);
+            p.GoggleWiggle = 0.14f * MathF.Sin(t * 1.7f);
             return p;
         }
     }
@@ -76,7 +76,7 @@ public static class Clips
             p.Squash = 1f + 0.10f * MathF.Sin(t * 15f) * env;
             p.Roll = 0.10f * MathF.Sin(t * 7.5f) * env;
             p.TentacleAmplitude = 0.45f; p.TentacleSpeed = 8f; p.TentacleSpread = 0.25f;
-            p.SproutWiggle = 0.4f * MathF.Sin(t * 12f) * env;
+            p.GoggleWiggle = 0.4f * MathF.Sin(t * 12f) * env;
             p.Particles = ParticleKind.Sparkles;
             return p;
         }
@@ -94,7 +94,7 @@ public static class Clips
             p.Roll = 0.16f * MathF.Sin(t * 11f);
             p.Squash = 1f + 0.08f * MathF.Cos(t * 22f);
             p.TentacleAmplitude = 0.55f; p.TentacleSpeed = 12f; p.TentacleSpread = 0.35f;
-            p.SproutWiggle = 0.5f * MathF.Sin(t * 16f);
+            p.GoggleWiggle = 0.5f * MathF.Sin(t * 16f);
             p.LookX = c.LookDir.X; p.LookY = -c.LookDir.Y;
             p.Particles = ParticleKind.Sparkles;
             return p;
@@ -113,7 +113,7 @@ public static class Clips
             p.Squash = t < 0.08f ? 0.88f : 1f + 0.13f * Decay(t - 0.08f, 4f) * MathF.Cos((t - 0.08f) * 10f);
             p.OffsetY = -4f * Decay(t, 3f) * MathF.Min(1f, t * 12f);
             p.TentacleSpread = 0.42f; p.TentacleAmplitude = 0.12f; p.TentacleSpeed = 14f;
-            p.SproutWiggle = 0.5f * Decay(t, 3f) * MathF.Sin(t * 30f);
+            p.GoggleWiggle = 0.5f * Decay(t, 3f) * MathF.Sin(t * 30f);
             p.LookX = c.LookDir.X; p.LookY = -c.LookDir.Y;
             return p;
         }
@@ -133,7 +133,7 @@ public static class Clips
             p.Pitch = c.LookDir.Y * 0.18f;
             p.Roll = (c.LookDir.X >= 0 ? -1f : 1f) * 0.16f * MathF.Min(1f, t * 3f); // head tilt
             p.TentacleAmplitude = 0.16f; p.TentacleSpeed = 2f;
-            p.SproutWiggle = 0.2f * MathF.Sin(t * 2.4f);
+            p.GoggleWiggle = 0.2f * MathF.Sin(t * 2.4f);
             return p;
         }
     }
@@ -169,7 +169,7 @@ public static class Clips
             p.Squash = 1f - 0.03f * (0.5f + 0.5f * MathF.Sin(t * 1.4f)); // slow breathing
             p.BobAmplitude = 1.0f; p.BobSpeed = 0.9f;
             p.TentacleAmplitude = 0.07f; p.TentacleSpeed = 0.8f; p.TentacleSpread = -0.05f;
-            p.SproutWiggle = 0.25f; // droops to one side
+            p.GoggleWiggle = 0.25f; // goggles tilt to one side
             p.Particles = ParticleKind.Zzz;
             return p;
         }
@@ -190,7 +190,7 @@ public static class Clips
             p.TentacleAmplitude = 0.08f + 0.15f * MathF.Min(1, t / 2.4f);
             p.Pitch = 0.14f * (1f - MathF.Min(1f, t / 1.2f)) - 0.08f * stretch;
             p.Roll = 0.10f * MathF.Sin(t * 5f) * stretch;
-            p.SproutWiggle = 0.25f * (1f - MathF.Min(1f, t)) + 0.3f * stretch * MathF.Sin(t * 10f);
+            p.GoggleWiggle = 0.25f * (1f - MathF.Min(1f, t)) + 0.3f * stretch * MathF.Sin(t * 10f);
             return p;
         }
     }
@@ -216,7 +216,7 @@ public static class Clips
             p.Yaw = 0.35f * MathF.Sin(t * w * 0.25f) + spin;
             p.TentacleAmplitude = 0.5f; p.TentacleSpeed = 9f; p.TentacleSpread = 0.3f;
             p.TentacleSway = -0.4f * MathF.Sin(t * w * 0.5f);
-            p.SproutWiggle = 0.5f * MathF.Sin(t * w);
+            p.GoggleWiggle = 0.5f * MathF.Sin(t * w);
             p.Particles = ParticleKind.Notes;
             return p;
         }
@@ -235,7 +235,7 @@ public static class Clips
             p.Squash = 1f + 0.05f * MathF.Sin(t * 6f);
             p.BobAmplitude = 2f; p.BobSpeed = 3f;
             p.TentacleAmplitude = 0.35f; p.TentacleSpeed = 5f; p.TentacleSpread = 0.3f;
-            p.SproutWiggle = 0.3f * MathF.Sin(t * 6f);
+            p.GoggleWiggle = 0.3f * MathF.Sin(t * 6f);
             p.Particles = ParticleKind.Hearts;
             return p;
         }
@@ -266,7 +266,7 @@ public static class Clips
             p.LookX = MathF.Abs(vx) > 0.15f ? MathF.Sign(vx) : 0f;
             p.LookY = MathF.Abs(vy) > 0.3f ? -MathF.Sign(vy) * 0.6f : 0f;
             if (_happy) { p.LookX = c.LookDir.X; p.LookY = -c.LookDir.Y; }
-            p.SproutWiggle = -vx * 0.3f;
+            p.GoggleWiggle = -vx * 0.3f;
             return p;
         }
     }
@@ -288,7 +288,7 @@ public static class Clips
             p.TentacleTrail = vy * 0.4f;
             p.TentacleAmplitude = 0.35f; p.TentacleSpeed = 11f; p.TentacleSpread = 0.2f;
             p.BobAmplitude = 0f;            // glued to the cursor
-            p.SproutWiggle = -vx * 0.5f + 0.2f * MathF.Sin(t * 14f);
+            p.GoggleWiggle = -vx * 0.5f + 0.2f * MathF.Sin(t * 14f);
             return p;
         }
     }
@@ -303,7 +303,7 @@ public static class Clips
             p.Expression = Expression.Happy;
             p.Squash = 1f - 0.11f * Decay(t, 4f) * MathF.Cos(t * 14f); // damped wobble on release
             p.TentacleAmplitude = 0.3f * Decay(t, 2f) + 0.2f; p.TentacleSpeed = 6f;
-            p.SproutWiggle = 0.45f * Decay(t, 3f) * MathF.Sin(t * 16f);
+            p.GoggleWiggle = 0.45f * Decay(t, 3f) * MathF.Sin(t * 16f);
             return p;
         }
     }

@@ -83,7 +83,7 @@ public sealed class Animator
         p.BobAmplitude *= k;
         p.OffsetX *= k; p.OffsetY *= k;
         p.TentacleAmplitude *= k;
-        p.SproutWiggle *= k;
+        p.GoggleWiggle *= k;
         return p;
     }
 

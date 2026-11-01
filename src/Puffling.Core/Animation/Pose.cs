@@ -45,7 +45,7 @@ public struct Pose
     // Face.
     public Expression Expression;
     public float LookX, LookY;              // -1..1, where the pupils point
-    public float SproutWiggle;              // radians
+    public float GoggleWiggle;              // subtle tilt of the raised goggles
 
     public ParticleKind Particles;
 
@@ -72,7 +72,7 @@ public struct Pose
             TentacleTrail = L(a.TentacleTrail, b.TentacleTrail, t),
             TentacleSway = L(a.TentacleSway, b.TentacleSway, t),
             LookX = L(a.LookX, b.LookX, t), LookY = L(a.LookY, b.LookY, t),
-            SproutWiggle = L(a.SproutWiggle, b.SproutWiggle, t),
+            GoggleWiggle = L(a.GoggleWiggle, b.GoggleWiggle, t),
             // Discrete channels switch at the midpoint of a blend.
             Expression = t < 0.5f ? a.Expression : b.Expression,
             Particles = t < 0.5f ? a.Particles : b.Particles,
@@ -96,6 +96,6 @@ public struct Pose
         TentacleSway = Math.Clamp(TentacleSway, -0.6f, 0.6f);
         LookX = Math.Clamp(LookX, -1f, 1f);
         LookY = Math.Clamp(LookY, -1f, 1f);
-        SproutWiggle = Math.Clamp(SproutWiggle, -0.6f, 0.6f);
+        GoggleWiggle = Math.Clamp(GoggleWiggle, -0.6f, 0.6f);
     }
 }

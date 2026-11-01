@@ -4,8 +4,8 @@ using Puffling.Core.Rendering;
 namespace Puffling.Core.Character;
 
 /// <summary>
-/// Paints the 12x10 pixel-art face for every expression. Faces are generated in code (no image
-/// files to license or ship) and cached, so switching expressions costs nothing per frame.
+/// Paints the 12x10 pixel-art Happy Ghast face for every expression. Faces are generated in code
+/// and cached, so switching expressions costs nothing per frame.
 /// Coordinates: x 0..11 left->right, y 0..9 top->bottom.
 /// </summary>
 public sealed class FaceTextures
@@ -68,8 +68,8 @@ public sealed class FaceTextures
         }
         void SmallSmile()
         {
-            t.Set(4, 6, Palette.Mouth); t.Set(7, 6, Palette.Mouth);
-            t.Set(5, 7, Palette.Mouth); t.Set(6, 7, Palette.Mouth);
+            t.Set(3, 6, Palette.Mouth); t.Set(8, 6, Palette.Mouth);
+            for (int x = 4; x <= 7; x++) t.Set(x, 7, Palette.Mouth);
         }
         void OpenSmile(bool wide)
         {

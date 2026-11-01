@@ -1,29 +1,28 @@
 namespace Puffling.Core.Character;
 
-/// <summary>Original colour palette for "Puffling", a mint cloud-jelly with a sprout on its head.</summary>
+/// <summary>Colours for the procedural Happy Ghast fan skin.</summary>
 public static class Palette
 {
-    public const uint Body = 0xFF9BE3C7;
-    public const uint BodyLight = 0xFFB8EFD9;
-    public const uint BodyShadow = 0xFF7ACBAE;
-    public const uint Cloud = 0xFFCDF6E6;
-    public const uint CloudShadow = 0xFFAEE9D2;
+    public const uint Body = 0xFFF6F0DC;
+    public const uint BodyLight = 0xFFFFF8E3;
+    public const uint BodyShadow = 0xFFDAD4C6;
+    public const uint Harness = 0xFFA5542B;
+    public const uint HarnessDark = 0xFF613B27;
+    public const uint HarnessBlue = 0xFF345C99;
+    public const uint GoggleGlass = 0xFF80CEE4;
+    public const uint GoggleLight = 0xFFB9F2F6;
 
-    public const uint Eye = 0xFF2B2540;
+    public const uint Eye = 0xFF41352F;
     public const uint EyeShine = 0xFFFFFFFF;
-    public const uint Blush = 0xFFF59AB0;
-    public const uint Mouth = 0xFF5A2E3E;
-    public const uint MouthInside = 0xFFD45D7A;
+    public const uint Blush = 0xFFE8D7B7;
+    public const uint Mouth = 0xFF4A392D;
+    public const uint MouthInside = 0xFF805D49;
     public const uint Heart = 0xFFFF5C8A;
 
-    public const uint Stem = 0xFF5DAA4E;
-    public const uint Leaf = 0xFF86D86A;
-    public const uint LeafDark = 0xFF62B54E;
-
-    public const uint Tentacle0 = 0xFF86D6BA;
-    public const uint Tentacle1 = 0xFFA9E6CF;
-    public const uint Tentacle2 = 0xFFFFB7A1;
-    public const uint Tentacle2Dark = 0xFFF29C86;
+    public const uint Tentacle0 = 0xFFF7F1DD;
+    public const uint Tentacle1 = 0xFFEFE9D7;
+    public const uint Tentacle2 = 0xFFE5DECF;
+    public const uint Tentacle2Dark = 0xFFD2CBBD;
 
     // Particles
     public const uint ZzzColor = 0xFFE9F2FF;
