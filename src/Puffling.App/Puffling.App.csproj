@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Windows shell. Uses raw Win32 via P/Invoke (no WinForms/WPF) so it stays tiny and
+       compiles on any OS; it only *runs* on Windows 10/11. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>Puffling</AssemblyName>
+    <RootNamespace>Puffling.App</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon Condition="Exists('puffling.ico')">puffling.ico</ApplicationIcon>
+    <!-- Win32-only APIs (Registry etc.) are intentional here. -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Puffling.Core\Puffling.Core.csproj" />
+  </ItemGroup>
+</Project>

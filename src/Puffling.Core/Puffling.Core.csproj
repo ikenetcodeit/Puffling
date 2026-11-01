@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Platform-agnostic: rendering, animation, behavior, movement, interaction, settings.
+       No Windows dependencies, so it builds and is unit-tested on any OS. -->
+  <PropertyGroup>
+    <RootNamespace>Puffling.Core</RootNamespace>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Dependency-free test runner (console). Run with: dotnet run, project tests/Puffling.Tests -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Puffling.Core\Puffling.Core.csproj" />
+  </ItemGroup>
+</Project>

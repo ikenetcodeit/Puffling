@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Renders animation previews to PNG frames without Windows. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Puffling.Core\Puffling.Core.csproj" />
+  </ItemGroup>
+</Project>

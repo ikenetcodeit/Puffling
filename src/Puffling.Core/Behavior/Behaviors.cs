@@ -1,0 +1,242 @@
+using System.Numerics;
+using Puffling.Core.Animation;
+
+namespace Puffling.Core.Behavior;
+
+public enum BehaviorKind
+{
+    Idle, Wander, Travel, Curious, Happy, Excited, Surprised, Dance, Affectionate,
+    Follow, ComeHere, Drowsy, Sleeping, Waking, Returning, Dragged, Settling,
+}
+
+/// <summary>
+/// One state of the behaviour state machine. A behaviour owns BOTH what the character does
+/// (motion) and how it looks (clip), so movement and animation can never disagree — e.g. there
+/// is no way to be "sleeping" while a wander target is still pulling the character around.
+/// </summary>
+public abstract class Behavior
+{
+    public abstract BehaviorKind Kind { get; }
+    /// <summary>Whether contextual reactions (curiosity, sleepiness, ...) may pre-empt this state.
+    /// Direct user input can always pre-empt (the brain enforces that).</summary>
+    public virtual bool Interruptible => true;
+    public float Elapsed { get; private set; }
+
+    internal void Tick(float dt) => Elapsed += dt;
+    public virtual void Enter(Brain b) { }
+    /// <summary>Returns false when finished; the brain then picks what comes next.</summary>
+    public abstract bool Update(Brain b, float dt);
+    public virtual void Exit(Brain b) { }
+    public override string ToString() => Kind.ToString();
+}
+
+public sealed class IdleBehavior : Behavior
+{
+    private float _duration, _driftTimer;
+    private Vector2 _anchor;
+    public override BehaviorKind Kind => BehaviorKind.Idle;
+    public override void Enter(Brain b)
+    {
+        _duration = b.RandomRange(4f, 9f) / b.Settings.ActivityFrequency;
+        _anchor = b.Motion.Position;
+        b.Motion.Release(b.Speed(80));
+        b.Animator.Play(Clips.Idle, 0.5f);
+    }
+    public override bool Update(Brain b, float dt)
+    {
+        // Tiny lazy drift around the spot so idling never looks frozen.
+        _driftTimer -= dt;
+        if (_driftTimer <= 0 && b.CanMove)
+        {
+            _driftTimer = b.RandomRange(2.5f, 5f);
+            var r = 5f * b.DpiScale;
+            b.Motion.MoveTo(_anchor + new Vector2(b.RandomRange(-r, r), b.RandomRange(-r * 0.5f, r * 0.5f)), b.Speed(6), b.Speed(10));
+        }
+        return Elapsed < _duration;
+    }
+}
+
+public sealed class WanderBehavior : Behavior
+{
+    public override BehaviorKind Kind => BehaviorKind.Wander;
+    public override void Enter(Brain b)
+    {
+        var p = b.Geometry.RandomPointNear(b.Motion.Position, 40 * b.DpiScale, 170 * b.DpiScale, b.Margin, b.Rng);
+        b.Motion.MoveTo(p, b.Speed(42), b.Speed(55));
+        b.Animator.Play(Clips.Travel, 0.6f);
+    }
+    public override bool Update(Brain b, float dt) => !b.Motion.Arrived && Elapsed < 15f;
+}
+
+public sealed class TravelBehavior : Behavior
+{
+    public override BehaviorKind Kind => BehaviorKind.Travel;
+    public override void Enter(Brain b)
+    {
+        var p = b.Geometry.RandomFarPoint(b.Motion.Position, 320 * b.DpiScale, b.Margin, b.Rng);
+        b.Motion.MoveTo(p, b.Speed(165), b.Speed(120));
+        b.Animator.Play(Clips.Travel, 0.6f);
+    }
+    public override bool Update(Brain b, float dt) => !b.Motion.Arrived && Elapsed < 30f;
+}
+
+public sealed class CuriousBehavior : Behavior
+{
+    private readonly bool _atCursor;
+    private float _duration;
+    public CuriousBehavior(bool atCursor) => _atCursor = atCursor;
+    public override BehaviorKind Kind => BehaviorKind.Curious;
+    public override void Enter(Brain b)
+    {
+        _duration = b.RandomRange(2.5f, 5f);
+        b.Motion.Release(b.Speed(120));
+        if (!_atCursor)
+        {
+            float a = b.RandomRange(0, MathF.Tau);
+            b.LookOverride = new Vector2(MathF.Cos(a), MathF.Sin(a) * 0.6f);
+        }
+        b.Animator.Play(Clips.Curious, 0.35f);
+    }
+    public override bool Update(Brain b, float dt)
+    {
+        if (_atCursor)
+        {
+            float d = b.CursorDistanceLogical;
+            if (d > 200) return false; // lost interest
+            // Shy approach: drift a bit closer if the cursor is lingering, but never under it.
+            if (b.CanMove && Elapsed > 1.2f && d > 90)
+                b.Motion.MoveTo(b.PointNearCursor(70), b.Speed(30), b.Speed(40));
+        }
+        return Elapsed < _duration;
+    }
+    public override void Exit(Brain b) => b.LookOverride = null;
+}
+
+/// <summary>Plays one finite clip in place (Happy, Excited, Surprised, Dance, Settle...).</summary>
+public sealed class ClipBehavior : Behavior
+{
+    private readonly BehaviorKind _kind;
+    private readonly IClip _clip;
+    private readonly float _blend;
+    public ClipBehavior(BehaviorKind kind, IClip clip, float blend = 0.2f) { _kind = kind; _clip = clip; _blend = blend; }
+    public override BehaviorKind Kind => _kind;
+    public override bool Interruptible => _kind is not (BehaviorKind.Dance or BehaviorKind.Settling);
+    public override void Enter(Brain b)
+    {
+        if (_kind != BehaviorKind.Settling) b.Motion.Release(b.Speed(200));
+        b.Animator.Play(_clip, _blend, restartIfSame: true);
+        if (_kind == BehaviorKind.Surprised && b.CanMove)
+        {
+            // Startle: a little hop away from the cursor.
+            var away = b.Motion.Position - b.Cursor;
+            if (away.LengthSquared() > 1) b.Motion.Velocity += Vector2.Normalize(away) * b.Speed(90);
+        }
+    }
+    public override bool Update(Brain b, float dt) => !b.Animator.ClipFinished;
+}
+
+public sealed class AffectionateBehavior : Behavior
+{
+    public double LastPet;
+    public override BehaviorKind Kind => BehaviorKind.Affectionate;
+    public override void Enter(Brain b)
+    {
+        LastPet = b.Now;
+        b.Motion.Release(b.Speed(150));
+        b.Animator.Play(Clips.Affection, 0.3f);
+    }
+    public override bool Update(Brain b, float dt) => b.Now - LastPet < 2.5;
+}
+
+public sealed class FollowBehavior : Behavior
+{
+    private readonly bool _indefinite;
+    private float _duration;
+    public FollowBehavior(bool indefinite) => _indefinite = indefinite;
+    public override BehaviorKind Kind => BehaviorKind.Follow;
+    public override void Enter(Brain b)
+    {
+        _duration = b.RandomRange(6f, 11f);
+        b.Animator.Play(Clips.Follow, 0.4f);
+    }
+    public override bool Update(Brain b, float dt)
+    {
+        if (!b.CanMove) return false;
+        // Stay beside the cursor, never under it, so we don't intercept the user's clicks.
+        b.Motion.MoveTo(b.PointNearCursor(58), b.Speed(230), b.Speed(380));
+        return _indefinite ? b.Settings.FollowCursor : Elapsed < _duration;
+    }
+}
+
+public sealed class ComeHereBehavior : Behavior
+{
+    public override BehaviorKind Kind => BehaviorKind.ComeHere;
+    public override void Enter(Brain b) => b.Animator.Play(Clips.Follow, 0.3f);
+    public override bool Update(Brain b, float dt)
+    {
+        b.Motion.MoveTo(b.PointNearCursor(56), b.Speed(280), b.Speed(450));
+        return !(b.Motion.Arrived || Elapsed > 8f);
+    }
+    public override void Exit(Brain b) => b.QueueNext(BehaviorKind.Happy);
+}
+
+public sealed class DrowsyBehavior : Behavior
+{
+    public override BehaviorKind Kind => BehaviorKind.Drowsy;
+    public override void Enter(Brain b)
+    {
+        b.Motion.Release(b.Speed(60));
+        b.Animator.Play(Clips.Drowsy, 0.8f);
+    }
+    public override bool Update(Brain b, float dt) => !b.Animator.ClipFinished;
+    public override void Exit(Brain b) => b.QueueNext(BehaviorKind.Sleeping);
+}
+
+public sealed class SleepingBehavior : Behavior
+{
+    private float _duration;
+    public override BehaviorKind Kind => BehaviorKind.Sleeping;
+    public override void Enter(Brain b)
+    {
+        _duration = b.RandomRange(90f, 240f);
+        b.Motion.Release(b.Speed(40));
+        b.Animator.Play(Clips.Sleeping, 1.2f);
+    }
+    public override bool Update(Brain b, float dt) => b.Settings.SleepMode || Elapsed < _duration;
+    public override void Exit(Brain b) => b.Sleepiness = 0f;
+}
+
+public sealed class ReturningBehavior : Behavior
+{
+    public override BehaviorKind Kind => BehaviorKind.Returning;
+    public override bool Interruptible => false;
+    public override void Enter(Brain b) => b.Animator.Play(Clips.Travel, 0.3f);
+    public override bool Update(Brain b, float dt)
+    {
+        // Re-evaluated every frame: monitors may change while we are on the way.
+        b.Motion.MoveTo(b.Geometry.NearestSafePoint(b.Motion.Position, b.Margin), b.Speed(240), b.Speed(400));
+        return !b.Motion.Arrived && Elapsed < 10f;
+    }
+    public override void Exit(Brain b)
+    {
+        // Safety net: if steering could not get us back (e.g. absurd geometry), snap.
+        if (!b.Geometry.IsComfortablyVisible(b.Motion.Position, b.Margin))
+            b.Motion.Teleport(b.Geometry.NearestSafePoint(b.Motion.Position, b.Margin));
+    }
+}
+
+public sealed class DraggedBehavior : Behavior
+{
+    public Vector2 GrabOffset;
+    public Vector2 DragVelocity;
+    public bool Released;
+    public override BehaviorKind Kind => BehaviorKind.Dragged;
+    public override bool Interruptible => false;
+    public override void Enter(Brain b)
+    {
+        GrabOffset = b.Motion.Position - b.Cursor;
+        b.Motion.Teleport(b.Motion.Position);
+        b.Animator.Play(Clips.Dragged, 0.12f);
+    }
+    public override bool Update(Brain b, float dt) => !Released;
+}
