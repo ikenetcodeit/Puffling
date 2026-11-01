@@ -1,6 +1,10 @@
 using System.Numerics;
 using Puffling.Core.Animation;
+using Puffling.Core;
+using Puffling.Core.Behavior;
+using Puffling.Core.Movement;
 using Puffling.Core.Rendering;
+using Puffling.Core.Settings;
 
 namespace Puffling.Preview;
 
@@ -10,6 +14,7 @@ public static class SimulationPreview
 {
     public static void Run(string outDir, string mode)
     {
+        if (mode is "pair" or "trio") { RunGroup(outDir, mode); return; }
         var clips = new Dictionary<string, IClip>
         {
             ["idle"] = Clips.Idle, ["happy"] = Clips.Happy, ["excited"] = Clips.Excited, ["surprised"] = Clips.Surprised,
@@ -49,6 +54,45 @@ public static class SimulationPreview
                     }
                 PngWriter.Write(Path.Combine(dir, $"{i:D3}.png"), frame, frame, outBuf);
             }
+        }
+    }
+
+    private static void RunGroup(string outDir, string mode)
+    {
+        int count = mode == "pair" ? 2 : 3;
+        const int width = 200, height = 130, fps = 12;
+        var geometry = ScreenGeometry.Single(400, 320, taskbar: 0);
+        var pets = new Companion[count];
+        for (int i = 0; i < count; i++)
+            pets[i] = new Companion(new CompanionSettings
+            {
+                LastX = 200 + (i - (count - 1) / 2f) * 105,
+                LastY = 150,
+            }, geometry, i + 1);
+        var group = new GroupInteractionCoordinator();
+        group.Tick(0, pets);
+        group.Tick(8, pets);
+        string dir = Path.Combine(outDir, mode);
+        Directory.CreateDirectory(dir);
+        int frames = (int)MathF.Ceiling((count == 2 ? 7.5f : 9.5f) * fps);
+        for (int i = 0; i < frames; i++)
+        {
+            var pixels = new uint[width * height];
+            foreach (var pet in pets)
+            {
+                pet.Tick(1f / fps, new FrameInputs(new Vector2(1000, 1000), 20));
+                var render = pet.Render();
+                int ox = render.Left - 100, oy = render.Top - 85;
+                for (int y = 0; y < render.Size; y++)
+                    for (int x = 0; x < render.Size; x++)
+                    {
+                        int px = ox + x, py = oy + y;
+                        uint color = render.Frame.Color[y * render.Size + x];
+                        if ((uint)px < width && (uint)py < height && color != 0)
+                            pixels[py * width + px] = color;
+                    }
+            }
+            PngWriter.Write(Path.Combine(dir, $"{i:D3}.png"), width, height, pixels);
         }
     }
 }

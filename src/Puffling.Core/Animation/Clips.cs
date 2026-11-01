@@ -41,9 +41,54 @@ public static class Clips
     public static readonly IClip Follow = new TravelClip(happy: true);
     public static readonly IClip Dragged = new DraggedClip();
     public static readonly IClip Settle = new SettleClip();
+    public static IClip PairPlay(int slot) => new PairPlayClip(slot);
+    public static IClip TrioPlay(int slot) => new TrioPlayClip(slot);
 
     internal static float Hop(float t, float freq) => MathF.Abs(MathF.Sin(t * freq));
     internal static float Decay(float t, float rate) => MathF.Exp(-t * rate);
+
+    private sealed class PairPlayClip(int slot) : IClip
+    {
+        public string Name => "Pair play";
+        public float? Duration => null;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            float beat = t * 7f + slot * MathF.PI;
+            p.Expression = Expression.Love;
+            p.OffsetY = -4f * MathF.Max(0, MathF.Sin(beat));
+            p.Roll = 0.14f * MathF.Sin(t * 3.5f + slot * MathF.PI);
+            p.Squash = 1f + 0.07f * MathF.Sin(beat);
+            p.TentacleAmplitude = 0.38f;
+            p.TentacleSpeed = 7f;
+            p.TentacleSpread = 0.22f;
+            p.LookX = c.LookDir.X;
+            p.Particles = ParticleKind.Hearts;
+            return p;
+        }
+    }
+
+    private sealed class TrioPlayClip(int slot) : IClip
+    {
+        public string Name => "Trio carousel";
+        public float? Duration => null;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            float beat = t * 9f + slot * MathF.Tau / 3f;
+            p.Expression = Expression.Excited;
+            p.OffsetY = -5f * MathF.Max(0, MathF.Sin(beat));
+            p.Roll = 0.20f * MathF.Sin(t * 4f + slot * MathF.Tau / 3f);
+            p.Yaw = 0.22f * MathF.Sin(t * 2.2f + slot * MathF.Tau / 3f);
+            p.Squash = 1f + 0.08f * MathF.Sin(beat);
+            p.TentacleAmplitude = 0.52f;
+            p.TentacleSpeed = 11f;
+            p.TentacleSpread = 0.36f;
+            p.GoggleWiggle = 0.35f * MathF.Sin(beat);
+            p.Particles = ParticleKind.Notes;
+            return p;
+        }
+    }
 
     private sealed class IdleClip : IClip
     {

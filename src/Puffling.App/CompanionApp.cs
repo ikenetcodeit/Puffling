@@ -56,6 +56,8 @@ public sealed class CompanionApp : NativeWindow, IDisposable
     private readonly SettingsStore _store;
     private CompanionSettings _settings;
     private readonly List<CompanionInstance> _companions = new();
+    private readonly List<Companion> _visiblePets = new(CompanionSettings.MaxCompanions);
+    private readonly GroupInteractionCoordinator _groupInteractions = new();
     private readonly TrayIcon _tray;
     private readonly SpeechBubbleWindow _bubble;
     private readonly ConcurrentQueue<Action> _uiWork = new();
@@ -155,6 +157,10 @@ public sealed class CompanionApp : NativeWindow, IDisposable
 
         GetCursorPos(out var cp);
         var input = new FrameInputs(new Vector2(cp.X, cp.Y), UserIdleSeconds());
+        _visiblePets.Clear();
+        foreach (var instance in _companions)
+            if (!instance.HiddenForFullscreen) _visiblePets.Add(instance.Pet);
+        _groupInteractions.Tick(now, _visiblePets);
         foreach (var instance in _companions)
         {
             if (instance.HiddenForFullscreen) continue;

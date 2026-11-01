@@ -29,7 +29,13 @@ Puffling has more to do than float in one spot. It can wander, travel between mo
 
 ### Bring a couple of friends
 
-Right-click a ghast or the tray icon and choose **Spawn another**. You can have **up to three** on screen at once. Each one wanders, reacts, and dances independently. Right-click a specific ghast for **Remove this Puffling**, or use **Remove newest** in the tray menu. Puffling remembers how many you had and where they were after restart.
+Right-click a ghast or the tray icon and choose **Spawn another**. You can have **up to three** on screen at once. Each one wanders and reacts on its own. When they share a monitor, they occasionally meet for a little performance:
+
+| Two ghasts: a mirrored, heart-filled flyby | Three ghasts: a tiny musical carousel |
+| :---: | :---: |
+| <img src="docs/previews/happy-ghast/pair-play.gif" alt="Two Happy Ghasts float around each other, hopping in turns with hearts" width="300"> | <img src="docs/previews/happy-ghast/trio-carousel.gif" alt="Three Happy Ghasts circle together with staggered hops and music notes" width="300"> |
+
+Click or drag one and the whole group gives way to you. Right-click a specific ghast for **Remove this Puffling**, or use **Remove newest** in the tray menu. Puffling remembers how many you had and where they were after restart.
 
 | Pet me | Pick me up | Off I go |
 | :---: | :---: | :---: |

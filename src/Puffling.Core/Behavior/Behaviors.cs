@@ -7,6 +7,7 @@ public enum BehaviorKind
 {
     Idle, Wander, Travel, Curious, Happy, Excited, Surprised, Dance, Affectionate,
     Follow, ComeHere, Drowsy, Sleeping, Waking, Returning, Dragged, Settling,
+    PairPlay, TrioPlay,
 }
 
 /// <summary>
@@ -133,6 +134,66 @@ public sealed class ClipBehavior : Behavior
         }
     }
     public override bool Update(Brain b, float dt) => !b.Animator.ClipFinished;
+}
+
+/// <summary>A shared dance: two mirror each other, while three circle a common centre.</summary>
+public sealed class GroupPlayBehavior : Behavior
+{
+    private readonly Vector2 _centre;
+    private readonly int _slot, _count;
+    private readonly float _radius;
+    public override BehaviorKind Kind => _count == 2 ? BehaviorKind.PairPlay : BehaviorKind.TrioPlay;
+    public override bool Interruptible => false;
+
+    public GroupPlayBehavior(Vector2 centre, int slot, int count, float radius)
+    {
+        if (count is not (2 or 3) || slot < 0 || slot >= count)
+            throw new ArgumentOutOfRangeException(nameof(slot));
+        _centre = centre;
+        _slot = slot;
+        _count = count;
+        _radius = radius;
+    }
+
+    public override void Enter(Brain b)
+    {
+        b.Animator.Play(_count == 2 ? Clips.PairPlay(_slot) : Clips.TrioPlay(_slot), 0.35f);
+    }
+
+    public override bool Update(Brain b, float dt)
+    {
+        float danceTime = MathF.Max(0, Elapsed - 1.5f);
+        Vector2 offset;
+        if (_count == 2)
+        {
+            float angle = danceTime * MathF.Tau / 6f;
+            float side = _slot == 0 ? -1f : 1f;
+            offset = new Vector2(side * _radius * MathF.Cos(angle),
+                                 side * _radius * 0.42f * MathF.Sin(angle));
+        }
+        else
+        {
+            float angle = -MathF.PI / 2f + _slot * MathF.Tau / 3f + danceTime * MathF.Tau / 8f;
+            offset = new Vector2(_radius * MathF.Cos(angle), _radius * 0.65f * MathF.Sin(angle));
+        }
+
+        if (b.CanMove)
+        {
+            var target = b.Geometry.MonitorAt(_centre).WorkArea.Deflate(b.Margin).Clamp(_centre + offset * b.DpiScale);
+            b.Motion.MoveTo(target, b.Speed(_count == 2 ? 100 : 115), b.Speed(220));
+        }
+        else b.Motion.Release(b.Speed(200));
+
+        var toward = _centre - b.Motion.Position;
+        b.LookOverride = toward.LengthSquared() > 1 ? Vector2.Normalize(toward) : Vector2.Zero;
+        return Elapsed < (_count == 2 ? 7.5f : 9.5f);
+    }
+
+    public override void Exit(Brain b)
+    {
+        b.Motion.Release(b.Speed(170));
+        b.LookOverride = null;
+    }
 }
 
 public sealed class AffectionateBehavior : Behavior
