@@ -213,9 +213,15 @@ public static class SettingsTests
         var store = new SettingsStore(Path.Combine(dir, "settings.json"));
         try
         {
-            store.Save(new CompanionSettings { Scale = 64, FollowCursor = true, LastX = 12.5f });
+            store.Save(new CompanionSettings
+            {
+                Scale = 64, FollowCursor = true, LastX = 12.5f, CompanionCount = 3,
+                AdditionalPositions = [new(300, 400), new(600, 700)]
+            });
             var back = store.Load();
             Assert.Equal(64, back.Scale, "scale"); Assert.True(back.FollowCursor, "follow"); Assert.True(back.LastX == 12.5f, "x");
+            Assert.Equal(3, back.CompanionCount, "saved companion count");
+            Assert.Equal(new SavedCompanionPosition(600, 700), back.AdditionalPositions[1], "saved extra position");
 
             File.WriteAllText(store.FilePath, "{ this is not json");
             var d = store.Load();

@@ -13,6 +13,7 @@ public sealed class SpeechBubbleWindow : NativeWindow, IDisposable
     private readonly IntPtr _brush, _font, _label;
     private readonly int _width, _height;
     private bool _visible, _topmost;
+    public bool IsVisible => _visible;
 
     public SpeechBubbleWindow(IntPtr owner, bool topmost)
     {

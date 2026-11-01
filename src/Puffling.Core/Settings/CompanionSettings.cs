@@ -3,6 +3,8 @@ using System.Text.Json.Serialization;
 
 namespace Puffling.Core.Settings;
 
+public readonly record struct SavedCompanionPosition(float X, float Y);
+
 /// <summary>
 /// User-facing settings. Plain mutable POCO for easy JSON round-tripping; every value is
 /// range-checked by <see cref="Normalize"/> after loading so a hand-edited or corrupted file can
@@ -11,6 +13,7 @@ namespace Puffling.Core.Settings;
 public sealed class CompanionSettings
 {
     public const int MinScale = 32, MaxScale = 96, DefaultScale = 48;
+    public const int MaxCompanions = 3;
 
     /// <summary>Character size in logical pixels (DPI-scaled at runtime).</summary>
     public int Scale { get; set; } = DefaultScale;
@@ -37,6 +40,8 @@ public sealed class CompanionSettings
     /// <summary>Last centre position in physical px (validated against monitors at startup).</summary>
     public float? LastX { get; set; }
     public float? LastY { get; set; }
+    public int CompanionCount { get; set; } = 1;
+    public List<SavedCompanionPosition> AdditionalPositions { get; set; } = new();
 
     public int SettingsVersion { get; set; } = 1;
 
@@ -52,13 +57,23 @@ public sealed class CompanionSettings
         EventReminderMinutes = Math.Clamp(EventReminderMinutes, 1, 120);
         if (LastX is { } x && !float.IsFinite(x)) LastX = null;
         if (LastY is { } y && !float.IsFinite(y)) LastY = null;
+        CompanionCount = Math.Clamp(CompanionCount, 1, MaxCompanions);
+        AdditionalPositions ??= new();
+        AdditionalPositions = AdditionalPositions
+            .Where(p => float.IsFinite(p.X) && float.IsFinite(p.Y))
+            .Take(MaxCompanions - 1).ToList();
         return this;
     }
 
     /// <summary>Effective frame rate after performance mode.</summary>
     public int EffectiveFps => PerformanceMode ? Math.Min(FpsLimit, 15) : FpsLimit;
 
-    public CompanionSettings Clone() => (CompanionSettings)MemberwiseClone();
+    public CompanionSettings Clone()
+    {
+        var clone = (CompanionSettings)MemberwiseClone();
+        clone.AdditionalPositions = new List<SavedCompanionPosition>(AdditionalPositions ?? new());
+        return clone;
+    }
 
     private static float ClampF(float v, float lo, float hi, float fallback) =>
         float.IsFinite(v) ? Math.Clamp(v, lo, hi) : fallback;

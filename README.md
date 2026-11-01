@@ -27,6 +27,10 @@ It starts with a quiet float. Move your cursor close and it gets curious. Give i
 
 Puffling has more to do than float in one spot. It can wander, travel between monitors, follow your cursor, or come when you call it from the tray menu. Pet it with a few back-and-forth strokes for hearts. Pick it up and let go with a flick to watch it wobble back into place.
 
+### Bring a couple of friends
+
+Right-click a ghast or the tray icon and choose **Spawn another**. You can have **up to three** on screen at once. Each one wanders, reacts, and dances independently. Right-click a specific ghast for **Remove this Puffling**, or use **Remove newest** in the tray menu. Puffling remembers how many you had and where they were after restart.
+
 | Pet me | Pick me up | Off I go |
 | :---: | :---: | :---: |
 | <img src="docs/previews/happy-ghast/affection.gif" alt="Puffling showing hearts when petted" width="144"> | <img src="docs/previews/happy-ghast/dragged.gif" alt="Puffling being dragged" width="144"> | <img src="docs/previews/happy-ghast/travel.gif" alt="Puffling traveling" width="144"> |

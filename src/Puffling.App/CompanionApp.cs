@@ -31,13 +31,31 @@ public sealed class CompanionApp : NativeWindow, IDisposable
 
     private enum Cmd
     {
-        Dance = 1, Happy, ComeHere, Sleep, Wake, Follow, Wander, Freeze, OnTop, Pause, SleepMode, Settings, Reset, Exit,
+        Dance = 1, Happy, ComeHere, Sleep, Wake, Follow, Wander, Freeze, OnTop, Pause, SleepMode,
+        Spawn, Remove, Settings, Reset, Exit,
+    }
+
+    private sealed class CompanionInstance : IDisposable
+    {
+        public Companion Pet { get; }
+        public OverlayWindow Window { get; }
+        public Vector2 LastSavedPosition { get; set; }
+        public bool HiddenForFullscreen { get; set; }
+
+        public CompanionInstance(IntPtr owner, CompanionSettings settings, ScreenGeometry geometry,
+            Func<double> clock, Action<CompanionInstance, int, int> onMenu)
+        {
+            Pet = new Companion(settings, geometry);
+            Window = new OverlayWindow(owner, Pet.Pointer, clock, (x, y) => onMenu(this, x, y), settings.AlwaysOnTop);
+            LastSavedPosition = Pet.Position;
+        }
+
+        public void Dispose() => Window.Dispose();
     }
 
     private readonly SettingsStore _store;
     private CompanionSettings _settings;
-    private readonly Companion _companion;
-    private readonly OverlayWindow _overlay;
+    private readonly List<CompanionInstance> _companions = new();
     private readonly TrayIcon _tray;
     private readonly SpeechBubbleWindow _bubble;
     private readonly ConcurrentQueue<Action> _uiWork = new();
@@ -57,10 +75,13 @@ public sealed class CompanionApp : NativeWindow, IDisposable
 
     private double _lastFrame, _lastHousekeeping, _lastGeometryCheck, _lastSave, _lastTopmost;
     private string _geometryFingerprint;
-    private bool _geometryDirty, _settingsDirty, _hiddenForFullscreen, _exiting;
+    private bool _geometryDirty, _settingsDirty, _exiting;
     private uint _timerInterval;
-    private Vector2 _lastSavedPos;
     private int _consecutiveFrameErrors;
+
+    private CompanionInstance Primary => _companions[0];
+    private CompanionInstance? Speaker => _companions.FirstOrDefault(c => !c.HiddenForFullscreen);
+    private bool AllHiddenForFullscreen => _companions.All(c => c.HiddenForFullscreen);
 
     public IntPtr SettingsWindowHandle => _settingsWindow?.Handle ?? IntPtr.Zero;
     public IntPtr MicrosoftSettingsWindowHandle => _microsoftWindow?.Handle ?? IntPtr.Zero;
@@ -76,12 +97,14 @@ public sealed class CompanionApp : NativeWindow, IDisposable
 
         var geometry = DisplayProvider.Query();
         _geometryFingerprint = DisplayProvider.Fingerprint(geometry);
-        // The simulation gets its own copy; this class remains the single owner of _settings.
-        _companion = new Companion(_settings.Clone(), geometry);
-        _companion.Brain.SettingsMutated += () => ApplySettings(_companion.Settings.Clone());
-        _lastSavedPos = _companion.Position;
-
-        _overlay = new OverlayWindow(Handle, _companion.Pointer, Now, ShowContextMenu, _settings.AlwaysOnTop);
+        // Each simulation gets a copy; this controller remains the single owner of shared settings.
+        int restoredCount = _settings.CompanionCount;
+        AddCompanion(geometry, _settings.LastX, _settings.LastY);
+        for (int i = 1; i < restoredCount; i++)
+        {
+            var saved = i - 1 < _settings.AdditionalPositions.Count ? _settings.AdditionalPositions[i - 1] : (SavedCompanionPosition?)null;
+            AddCompanion(geometry, saved?.X, saved?.Y);
+        }
         _bubble = new SpeechBubbleWindow(Handle, _settings.AlwaysOnTop);
         if (_settings.MicrosoftClientId.Length > 0) _microsoft = new MicrosoftRemindersClient(_settings.MicrosoftClientId);
         _tray = new TrayIcon(Handle);
@@ -94,6 +117,30 @@ public sealed class CompanionApp : NativeWindow, IDisposable
 
     private double Now() => _clock.Elapsed.TotalSeconds;
 
+    private CompanionInstance AddCompanion(ScreenGeometry geometry, float? x, float? y, CompanionInstance? near = null)
+    {
+        if (_companions.Count >= CompanionSettings.MaxCompanions)
+            throw new InvalidOperationException("Companion limit reached.");
+        var own = _settings.Clone();
+        if (_companions.Count > 0 && (x is null || y is null))
+        {
+            var anchor = near ?? _companions[^1];
+            Vector2 p = CompanionPlacement.Find(geometry, anchor.Pet.Position,
+                _companions.Select(c => c.Pet.Position).ToArray(), anchor.Pet.Brain.Margin);
+            x = p.X; y = p.Y;
+        }
+        own.LastX = x; own.LastY = y;
+        var instance = new CompanionInstance(Handle, own, geometry, Now, (slot, px, py) => ShowContextMenu(px, py, slot));
+        instance.Pet.Brain.SettingsMutated += () =>
+        {
+            var next = _settings.Clone();
+            next.SleepMode = instance.Pet.Settings.SleepMode;
+            ApplySettings(next);
+        };
+        _companions.Add(instance);
+        return instance;
+    }
+
     // ------------------------------------------------------------------ frame loop
 
     private void OnFrame()
@@ -104,14 +151,19 @@ public sealed class CompanionApp : NativeWindow, IDisposable
 
         if (now - _lastHousekeeping >= 1.0) Housekeeping(now);
         UpdateBubble(now);
-        if (_hiddenForFullscreen) return;
+        if (AllHiddenForFullscreen) return;
 
         GetCursorPos(out var cp);
         var input = new FrameInputs(new Vector2(cp.X, cp.Y), UserIdleSeconds());
-        _companion.Tick(dt, input);
-        var r = _companion.Render();
-        _overlay.Present(r.Frame, r.Left, r.Top);
-        if (_activeBubble != null) _bubble.MoveNear(_companion.Position, _companion.Brain.Geometry.MonitorAt(_companion.Position));
+        foreach (var instance in _companions)
+        {
+            if (instance.HiddenForFullscreen) continue;
+            instance.Pet.Tick(dt, input);
+            var r = instance.Pet.Render();
+            instance.Window.Present(r.Frame, r.Left, r.Top);
+        }
+        if (_activeBubble != null && Speaker is { } speaker)
+            _bubble.MoveNear(speaker.Pet.Position, speaker.Pet.CurrentMonitor);
 
         SetFrameInterval();
         _consecutiveFrameErrors = 0;
@@ -122,12 +174,20 @@ public sealed class CompanionApp : NativeWindow, IDisposable
     {
         _lastHousekeeping = now;
 
-        bool fs = _settings.HideInFullscreen && FullscreenDetector.AffectsPoint(FullscreenDetector.Detect(), _companion.Position);
-        if (fs != _hiddenForFullscreen)
+        var fullscreen = _settings.HideInFullscreen ? FullscreenDetector.Detect() : default;
+        bool fullscreenChanged = false;
+        foreach (var instance in _companions)
         {
-            _hiddenForFullscreen = fs;
-            if (fs) { _overlay.Hide(); _bubble.Hide(); }
-            Log.Info(fs ? "Fullscreen app detected: hiding and idling." : "Fullscreen app gone: resuming.");
+            bool fs = _settings.HideInFullscreen && FullscreenDetector.AffectsPoint(fullscreen, instance.Pet.Position);
+            if (fs == instance.HiddenForFullscreen) continue;
+            instance.HiddenForFullscreen = fs;
+            fullscreenChanged = true;
+            if (fs) instance.Window.Hide();
+        }
+        if (fullscreenChanged)
+        {
+            if (Speaker == null) _bubble.Hide();
+            Log.Info(AllHiddenForFullscreen ? "Fullscreen app detected: hiding and idling." : "Fullscreen state changed: resuming visible companions.");
             _lastFrame = Now(); // don't feed a huge dt after resuming
             SetFrameInterval();
         }
@@ -143,15 +203,19 @@ public sealed class CompanionApp : NativeWindow, IDisposable
             if (fp != _geometryFingerprint)
             {
                 _geometryFingerprint = fp;
-                _companion.UpdateGeometry(g);
+                foreach (var instance in _companions) instance.Pet.UpdateGeometry(g);
                 Log.Info($"Display layout changed: {fp}");
             }
         }
 
-        if (now - _lastTopmost > 5.0) { _lastTopmost = now; _overlay.ReassertTopmost(); }
+        if (now - _lastTopmost > 5.0)
+        {
+            _lastTopmost = now;
+            foreach (var instance in _companions) instance.Window.ReassertTopmost();
+        }
 
-        var pos = _companion.Position;
-        if (Vector2.Distance(pos, _lastSavedPos) > 2f && now - _lastSave > 30.0) _settingsDirty = true;
+        if (now - _lastSave > 30.0 && _companions.Any(c => Vector2.Distance(c.Pet.Position, c.LastSavedPosition) > 2f))
+            _settingsDirty = true;
         if (_settingsDirty && now - _lastSave > 2.0) Save();
         CheckMicrosoftReminders();
     }
@@ -167,11 +231,19 @@ public sealed class CompanionApp : NativeWindow, IDisposable
 
     private void UpdateBubble(double now)
     {
+        var speaker = Speaker;
+        if (speaker == null) return;
+        if (_activeBubble != null && !_bubble.IsVisible)
+        {
+            _bubbleUntil = now + 12;
+            _bubble.Show(_activeBubble, speaker.Pet.Position, speaker.Pet.CurrentMonitor);
+            return;
+        }
         if (_activeBubble != null && now >= _bubbleUntil) { _bubble.Hide(); _activeBubble = null; }
-        if (_hiddenForFullscreen || _activeBubble != null || _bubbleMessages.Count == 0) return;
+        if (_activeBubble != null || _bubbleMessages.Count == 0) return;
         _activeBubble = _bubbleMessages.Dequeue();
         _bubbleUntil = now + 12;
-        _bubble.Show(_activeBubble, _companion.Position, _companion.Brain.Geometry.MonitorAt(_companion.Position));
+        _bubble.Show(_activeBubble, speaker.Pet.Position, speaker.Pet.CurrentMonitor);
     }
 
     private void CheckMicrosoftReminders()
@@ -210,10 +282,10 @@ public sealed class CompanionApp : NativeWindow, IDisposable
     private void SetFrameInterval()
     {
         int fps;
-        if (_hiddenForFullscreen) fps = 1;                                   // just keep checking
-        else if (_companion.Pointer.IsDragging) fps = 60;                    // drag must feel glued to the cursor
+        if (AllHiddenForFullscreen) fps = 1;                                   // just keep checking
+        else if (_companions.Any(c => c.Pet.Pointer.IsDragging)) fps = 60;     // drag must feel glued to the cursor
         else if (_settings.Paused) fps = 4;                                  // still respond to input/drag
-        else if (_companion.IsSleeping) fps = Math.Min(12, _settings.EffectiveFps);
+        else if (_companions.Where(c => !c.HiddenForFullscreen).All(c => c.Pet.IsSleeping)) fps = Math.Min(12, _settings.EffectiveFps);
         else fps = _settings.EffectiveFps;
 
         uint interval = (uint)Math.Max(10, 1000 / fps);
@@ -236,8 +308,10 @@ public sealed class CompanionApp : NativeWindow, IDisposable
     {
         var prev = _settings;
         _settings = next.Normalize();
-        _companion.ApplySettings(_settings.Clone());
-        if (prev.AlwaysOnTop != _settings.AlwaysOnTop) _overlay.SetTopmost(_settings.AlwaysOnTop);
+        _settings.CompanionCount = _companions.Count;
+        foreach (var instance in _companions) instance.Pet.ApplySettings(_settings.Clone());
+        if (prev.AlwaysOnTop != _settings.AlwaysOnTop)
+            foreach (var instance in _companions) instance.Window.SetTopmost(_settings.AlwaysOnTop);
         if (prev.AlwaysOnTop != _settings.AlwaysOnTop) _bubble.SetTopmost(_settings.AlwaysOnTop);
         if (prev.MicrosoftClientId != _settings.MicrosoftClientId)
         {
@@ -266,11 +340,14 @@ public sealed class CompanionApp : NativeWindow, IDisposable
     {
         try
         {
-            var pos = _companion.Position;
+            var pos = Primary.Pet.Position;
             _settings.LastX = pos.X;
             _settings.LastY = pos.Y;
+            _settings.CompanionCount = _companions.Count;
+            _settings.AdditionalPositions = _companions.Skip(1)
+                .Select(c => new SavedCompanionPosition(c.Pet.Position.X, c.Pet.Position.Y)).ToList();
             _store.Save(_settings);
-            _lastSavedPos = pos;
+            foreach (var instance in _companions) instance.LastSavedPosition = instance.Pet.Position;
             _settingsDirty = false;
         }
         catch (Exception ex) { Log.Error("Saving settings failed", ex); }
@@ -278,16 +355,19 @@ public sealed class CompanionApp : NativeWindow, IDisposable
     }
 
     private string Tooltip() =>
-        "Puffling" + (_settings.Paused ? " (paused)" : _settings.SleepMode ? " (sleeping)" : "");
+        $"Puffling ({_companions.Count}/{CompanionSettings.MaxCompanions})" +
+        (_settings.Paused ? " (paused)" : _settings.SleepMode ? " (sleeping)" : "");
 
     // ------------------------------------------------------------------ menus
 
-    private void ShowContextMenu(int x, int y)
+    private void ShowContextMenu(int x, int y, CompanionInstance? selected = null)
     {
+        bool fromTray = selected == null;
+        var target = selected ?? Primary;
         IntPtr menu = CreatePopupMenu();
         try
         {
-            bool asleep = _companion.Brain.IsAsleepish;
+            bool asleep = target.Pet.Brain.IsAsleepish;
             void Item(Cmd id, string text, bool check = false, bool enabled = true) =>
                 AppendMenuW(menu, MF_STRING | (check ? MF_CHECKED : 0) | (enabled ? 0 : MF_GRAYED), (IntPtr)(int)id, text);
             void Sep() => AppendMenuW(menu, MF_SEPARATOR, IntPtr.Zero, null);
@@ -304,6 +384,11 @@ public sealed class CompanionApp : NativeWindow, IDisposable
             Item(Cmd.Pause, "Pause animations", _settings.Paused);
             Item(Cmd.SleepMode, "Sleep mode", _settings.SleepMode);
             Sep();
+            Item(Cmd.Spawn, $"Spawn another ({_companions.Count}/{CompanionSettings.MaxCompanions})",
+                enabled: _companions.Count < CompanionSettings.MaxCompanions);
+            Item(Cmd.Remove, fromTray ? "Remove newest" : "Remove this Puffling",
+                enabled: _companions.Count > 1);
+            Sep();
             Item(Cmd.Settings, "Settings…");
             Item(Cmd.Reset, "Reset position");
             Sep();
@@ -313,45 +398,79 @@ public sealed class CompanionApp : NativeWindow, IDisposable
             SetForegroundWindow(Handle);
             int chosen = TrackPopupMenuEx(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON | TPM_NONOTIFY, x, y, Handle, IntPtr.Zero);
             PostMessageW(Handle, WM_NULL, IntPtr.Zero, IntPtr.Zero);
-            if (chosen != 0) Execute((Cmd)chosen);
+            if (chosen != 0) Execute((Cmd)chosen, target, fromTray);
         }
         finally { DestroyMenu(menu); }
     }
 
-    private void Execute(Cmd c)
+    private void Execute(Cmd c, CompanionInstance target, bool fromTray)
     {
         CompanionSettings Toggle(Action<CompanionSettings> f) { var n = _settings.Clone(); f(n); return n; }
         switch (c)
         {
-            case Cmd.Dance: _companion.Execute(CompanionCommand.Dance); break;
-            case Cmd.Happy: _companion.Execute(CompanionCommand.Happy); break;
-            case Cmd.ComeHere: _companion.Execute(CompanionCommand.ComeHere); break;
-            case Cmd.Sleep: _companion.Execute(CompanionCommand.Sleep); break;
-            case Cmd.Wake: _companion.Execute(CompanionCommand.Wake); break;
+            case Cmd.Dance: target.Pet.Execute(CompanionCommand.Dance); break;
+            case Cmd.Happy: target.Pet.Execute(CompanionCommand.Happy); break;
+            case Cmd.ComeHere: target.Pet.Execute(CompanionCommand.ComeHere); break;
+            case Cmd.Sleep: target.Pet.Execute(CompanionCommand.Sleep); break;
+            case Cmd.Wake: target.Pet.Execute(CompanionCommand.Wake); break;
             case Cmd.Follow: ApplySettings(Toggle(s => s.FollowCursor = !s.FollowCursor)); break;
             case Cmd.Wander: ApplySettings(Toggle(s => s.AutonomousMovement = !s.AutonomousMovement)); break;
             case Cmd.Freeze: ApplySettings(Toggle(s => s.FreezePosition = !s.FreezePosition)); break;
             case Cmd.OnTop: ApplySettings(Toggle(s => s.AlwaysOnTop = !s.AlwaysOnTop)); break;
             case Cmd.Pause: ApplySettings(Toggle(s => s.Paused = !s.Paused)); break;
             case Cmd.SleepMode: ApplySettings(Toggle(s => s.SleepMode = !s.SleepMode)); break;
+            case Cmd.Spawn: SpawnCompanion(target); break;
+            case Cmd.Remove: RemoveCompanion(fromTray ? _companions[^1] : target); break;
             case Cmd.Settings: OpenSettings(); break;
-            case Cmd.Reset: ResetPosition(); break;
+            case Cmd.Reset: ResetPosition(target); break;
             case Cmd.Exit: Exit(); break;
         }
     }
 
-    private void ResetPosition()
+    private void SpawnCompanion(CompanionInstance near)
+    {
+        if (_companions.Count >= CompanionSettings.MaxCompanions) return;
+        var instance = AddCompanion(near.Pet.Geometry, null, null, near);
+        instance.HiddenForFullscreen = _settings.HideInFullscreen &&
+            FullscreenDetector.AffectsPoint(FullscreenDetector.Detect(), instance.Pet.Position);
+        instance.Pet.Execute(CompanionCommand.Happy);
+        _settings.CompanionCount = _companions.Count;
+        _tray.SetTooltip(Tooltip());
+        Save();
+        SetFrameInterval();
+    }
+
+    private void RemoveCompanion(CompanionInstance instance)
+    {
+        if (_companions.Count <= 1 || !_companions.Remove(instance)) return;
+        instance.Dispose();
+        if (Speaker == null) _bubble.Hide();
+        _settings.CompanionCount = _companions.Count;
+        _tray.SetTooltip(Tooltip());
+        Save();
+        SetFrameInterval();
+    }
+
+    private void ResetPosition(CompanionInstance target)
     {
         _geometryDirty = true;
-        _companion.UpdateGeometry(DisplayProvider.Query());
-        _companion.Execute(CompanionCommand.ResetPosition);
+        var geometry = DisplayProvider.Query();
+        target.Pet.UpdateGeometry(geometry);
+        target.Pet.Execute(CompanionCommand.ResetPosition);
+        if (target != Primary)
+        {
+            Vector2 p = CompanionPlacement.Find(geometry, Primary.Pet.Position,
+                _companions.Where(c => c != target).Select(c => c.Pet.Position).ToArray(), target.Pet.Brain.Margin);
+            target.Pet.Motion.Teleport(p);
+        }
         _settingsDirty = true;
     }
 
     private void OpenSettings()
     {
         if (_settingsWindow != null) { _settingsWindow.BringToFront(); return; }
-        _settingsWindow = new SettingsWindow(_settings, ApplySettings, ResetPosition, Exit, () => _settingsWindow = null, OpenMicrosoftSettings);
+        _settingsWindow = new SettingsWindow(_settings, ApplySettings, () => ResetPosition(Primary), Exit,
+            () => _settingsWindow = null, OpenMicrosoftSettings);
     }
 
     private void OpenMicrosoftSettings()
@@ -508,7 +627,7 @@ public sealed class CompanionApp : NativeWindow, IDisposable
     public void Dispose()
     {
         _tray.Dispose();
-        _overlay.Dispose();
+        foreach (var instance in _companions) instance.Dispose();
         _bubble.Dispose();
         _microsoft?.Dispose();
     }
