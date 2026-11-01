@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/previews/idle.gif" alt="A tiny Happy Ghast floating gently" width="168">
+<img src="docs/previews/happy-ghast/hero.png" alt="Three tiny Happy Ghasts floating among blocky clouds" width="960">
 
 # Puffling ☁️
 
@@ -9,6 +9,8 @@
 This `happy-ghast` branch gives Puffling a fan-made Minecraft Happy Ghast skin: a pale cube, smiling face, short dangling tentacles, leather harness, and raised blue goggles. It floats around your Windows desktop, notices you, gets playful, and eventually falls asleep.
 
 **Windows 10/11 · C# · .NET 8 · 48 px of personality by default**
+
+<em>Illustration and GIFs are made from this branch's in-app renders.</em>
 
 </div>
 
@@ -20,14 +22,14 @@ It starts with a quiet float. Move your cursor close and it gets curious. Give i
 
 | A little attention | A lot of excitement | Time for a nap |
 | :---: | :---: | :---: |
-| <img src="docs/previews/curious.gif" alt="Puffling looking toward the cursor" width="144"> | <img src="docs/previews/dance.gif" alt="Puffling dancing" width="144"> | <img src="docs/previews/sleeping.gif" alt="Puffling sleeping" width="144"> |
+| <img src="docs/previews/happy-ghast/curious.gif" alt="Puffling looking toward the cursor" width="144"> | <img src="docs/previews/happy-ghast/dance.gif" alt="Puffling dancing" width="144"> | <img src="docs/previews/happy-ghast/sleeping.gif" alt="Puffling sleeping" width="144"> |
 | **Hover nearby** | **Double-click** | **Let it rest** |
 
 Puffling has more to do than float in one spot. It can wander, travel between monitors, follow your cursor, or come when you call it from the tray menu. Pet it with a few back-and-forth strokes for hearts. Pick it up and let go with a flick to watch it wobble back into place.
 
 | Pet me | Pick me up | Off I go |
 | :---: | :---: | :---: |
-| <img src="docs/previews/affection.gif" alt="Puffling showing hearts when petted" width="144"> | <img src="docs/previews/dragged.gif" alt="Puffling being dragged" width="144"> | <img src="docs/previews/travel.gif" alt="Puffling traveling" width="144"> |
+| <img src="docs/previews/happy-ghast/affection.gif" alt="Puffling showing hearts when petted" width="144"> | <img src="docs/previews/happy-ghast/dragged.gif" alt="Puffling being dragged" width="144"> | <img src="docs/previews/happy-ghast/travel.gif" alt="Puffling traveling" width="144"> |
 
 ## Invite Puffling onto your desktop
 
@@ -79,7 +81,7 @@ Settings let you choose its size, movement speed, animation intensity, activity 
 Puffling's window defaults to **48 × 48 logical pixels** and can be set from **32 to 96**. It scales with your monitor's DPI, stays within the usable screen area, and keeps its animations inside that little square. Transparent pixels pass clicks through, and clicking Puffling leaves keyboard focus in your current app.
 
 <p align="center">
-  <img src="docs/previews/actual_size.png" alt="Puffling rendered at actual 32, 48, and 96 pixel sizes"><br>
+  <img src="docs/previews/happy-ghast/actual_size.png" alt="Puffling rendered at actual 32, 48, and 96 pixel sizes"><br>
   <em>Actual pixel sizes: 32, 48, and 96. The animated previews above are enlarged.</em>
 </p>
 
@@ -95,7 +97,7 @@ dotnet run --project tools/Puffling.Preview -- preview expressions
 The automated tests cover gestures, rendering bounds, movement, settings, and a simulated multi-monitor session. The Windows shell still needs hands-on testing for tray, fullscreen, and mixed-DPI behavior.
 
 <p align="center">
-  <img src="docs/previews/expressions.png" alt="A lineup of Puffling's different expressions"><br>
+  <img src="docs/previews/happy-ghast/expressions.png" alt="A lineup of Puffling's different expressions"><br>
   <em>One tiny face, a surprising number of moods.</em>
 </p>
 
