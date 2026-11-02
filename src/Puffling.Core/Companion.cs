@@ -34,7 +34,7 @@ public sealed class Companion
     public CompanionVariant Variant { get; }
 
     public Companion(CompanionSettings settings, ScreenGeometry geometry, int? seed = null,
-        CompanionVariant variant = CompanionVariant.Classic)
+        CompanionVariant variant = CompanionVariant.Red)
     {
         Variant = variant;
         _renderer = new CharacterRenderer(variant);

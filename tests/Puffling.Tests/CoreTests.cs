@@ -15,6 +15,11 @@ public static class RenderingTests
     {
         Clips.Idle, Clips.Happy, Clips.Excited, Clips.Surprised, Clips.Curious, Clips.Drowsy, Clips.Sleeping,
         Clips.Waking, Clips.Dance, Clips.Affection, Clips.Travel, Clips.Follow, Clips.Dragged, Clips.Settle,
+        Clips.Signature(Puffling.Core.Character.CompanionVariant.Red),
+        Clips.Signature(Puffling.Core.Character.CompanionVariant.Blue),
+        Clips.Signature(Puffling.Core.Character.CompanionVariant.Green),
+        Clips.GroupGame(GroupGameKind.Chase, 0), Clips.GroupGame(GroupGameKind.Spar, 1),
+        Clips.GroupGame(GroupGameKind.Pong, 2),
     };
 
     [Test]

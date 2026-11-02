@@ -58,6 +58,10 @@
     {
       "date": "2026-11-02",
       "summary": "Fixed frame smearing in all 14 Happy Ghast preview GIFs by setting each frame to clear to the transparent background; verified README loops and completed TODO 5."
+    },
+    {
+      "date": "2026-11-03",
+      "summary": "Expanded Puffling individuality with red, blue, and green faces, temperaments, click reactions, and solo moves; added synchronized chase, bounce sparring, and three-pet pong games and refreshed the README previews."
     }
   ]
 }

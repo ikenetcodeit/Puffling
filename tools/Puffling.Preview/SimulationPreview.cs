@@ -2,6 +2,7 @@ using System.Numerics;
 using Puffling.Core.Animation;
 using Puffling.Core;
 using Puffling.Core.Behavior;
+using Puffling.Core.Character;
 using Puffling.Core.Movement;
 using Puffling.Core.Rendering;
 using Puffling.Core.Settings;
@@ -14,7 +15,7 @@ public static class SimulationPreview
 {
     public static void Run(string outDir, string mode)
     {
-        if (mode is "pair" or "trio") { RunGroup(outDir, mode); return; }
+        if (mode is "pair" or "trio" or "chase" or "spar" or "pong") { RunGroup(outDir, mode); return; }
         var clips = new Dictionary<string, IClip>
         {
             ["idle"] = Clips.Idle, ["happy"] = Clips.Happy, ["excited"] = Clips.Excited, ["surprised"] = Clips.Surprised,
@@ -59,22 +60,37 @@ public static class SimulationPreview
 
     private static void RunGroup(string outDir, string mode)
     {
-        int count = mode == "pair" ? 2 : 3;
+        int count = mode is "pair" or "spar" ? 2 : 3;
         const int width = 200, height = 130, fps = 12;
         var geometry = ScreenGeometry.Single(400, 320, taskbar: 0);
         var pets = new Companion[count];
         for (int i = 0; i < count; i++)
             pets[i] = new Companion(new CompanionSettings
             {
-                LastX = 200 + (i - (count - 1) / 2f) * 105,
+                LastX = 200 + (i - (count - 1) / 2f) * 70,
                 LastY = 150,
-            }, geometry, i + 1);
+            }, geometry, i + 1, CompanionVariants.ForSlot(i));
         var group = new GroupInteractionCoordinator();
-        group.Tick(0, pets);
-        group.Tick(8, pets);
+        if (mode is "pair" or "trio")
+        {
+            group.Tick(0, pets);
+            group.Tick(8, pets);
+        }
+        else
+        {
+            GroupGameKind game = mode switch
+            {
+                "chase" => GroupGameKind.Chase,
+                "spar" => GroupGameKind.Spar,
+                _ => GroupGameKind.Pong,
+            };
+            for (int i = 0; i < count; i++)
+                pets[i].Brain.Interrupt(new GroupGameBehavior(new Vector2(200, 150), i, count,
+                    count == 2 ? 52f : 66f, game));
+        }
         string dir = Path.Combine(outDir, mode);
         Directory.CreateDirectory(dir);
-        int frames = (int)MathF.Ceiling((count == 2 ? 7.5f : 9.5f) * fps);
+        int frames = (int)MathF.Ceiling((mode == "pair" ? 7.5f : mode == "trio" ? 9.5f : 8.5f) * fps);
         for (int i = 0; i < frames; i++)
         {
             var pixels = new uint[width * height];

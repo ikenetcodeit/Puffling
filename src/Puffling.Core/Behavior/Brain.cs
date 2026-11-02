@@ -7,7 +7,7 @@ using Puffling.Core.Settings;
 
 namespace Puffling.Core.Behavior;
 
-public enum CompanionCommand { Dance, Sleep, Wake, ComeHere, ResetPosition, Happy }
+public enum CompanionCommand { Dance, Sleep, Wake, ComeHere, ResetPosition, Happy, Signature }
 
 /// <summary>
 /// The behaviour state machine ("personality").
@@ -56,10 +56,11 @@ public sealed class Brain
         [BehaviorKind.Wander] = 4, [BehaviorKind.Travel] = 25, [BehaviorKind.Happy] = 15,
         [BehaviorKind.Curious] = 6, [BehaviorKind.Excited] = 40, [BehaviorKind.Dance] = 120,
         [BehaviorKind.Follow] = 60, [BehaviorKind.Surprised] = 30,
+        [BehaviorKind.Signature] = 28,
     };
 
     public Brain(Motion motion, Animator animator, ScreenGeometry geometry, CompanionSettings settings, Random rng,
-        CompanionVariant variant = CompanionVariant.Classic)
+        CompanionVariant variant = CompanionVariant.Red)
     {
         Motion = motion; Animator = animator; Geometry = geometry; Settings = settings; Rng = rng; Variant = variant;
         Current = new IdleBehavior();
@@ -178,9 +179,10 @@ public sealed class Brain
             (BehaviorKind.Wander, CanMove ? 2.6f * f * (busy ? 0.6f : 1f) : 0f),
             (BehaviorKind.Travel, CanMove ? 0.9f * f * (busy ? 0.25f : 1f) : 0f),
             (BehaviorKind.Happy, 0.7f * f * Variant.Playfulness()),
-            (BehaviorKind.Curious, 0.8f * f),
-            (BehaviorKind.Excited, 0.25f * f * Variant.Playfulness()),
+            (BehaviorKind.Curious, 0.8f * f * Variant.Curiosity()),
+            (BehaviorKind.Excited, 0.25f * f * Variant.Boldness()),
             (BehaviorKind.Dance, 0.15f * f * Variant.Playfulness() * (busy ? 0.3f : 1f)),
+            (BehaviorKind.Signature, 0.22f * f * Variant.Playfulness() * (busy ? 0.4f : 1f)),
             (BehaviorKind.Follow, CanMove && !Settings.FollowCursor ? 0.35f * f : 0f),
         };
 
@@ -212,6 +214,7 @@ public sealed class Brain
         BehaviorKind.Excited => new ClipBehavior(k, Clips.Excited),
         BehaviorKind.Surprised => new ClipBehavior(k, Clips.Surprised, 0.08f),
         BehaviorKind.Dance => new ClipBehavior(k, Clips.Dance, 0.3f),
+        BehaviorKind.Signature => new ClipBehavior(k, Clips.Signature(Variant), 0.3f),
         BehaviorKind.Affectionate => new AffectionateBehavior(),
         BehaviorKind.Follow => new FollowBehavior(indefinite: false),
         BehaviorKind.ComeHere => new ComeHereBehavior(),
@@ -276,7 +279,12 @@ public sealed class Brain
                 _recentClicks.Add(Now);
                 _recentClicks.RemoveAll(t => Now - t > 2.0);
                 if (_recentClicks.Count >= 3) { _recentClicks.Clear(); Interrupt(Create(BehaviorKind.Excited)); }
-                else Interrupt(Create(BehaviorKind.Happy));
+                else Interrupt(Variant switch
+                {
+                    CompanionVariant.Red => new CuriousBehavior(atCursor: true),
+                    CompanionVariant.Green => Create(BehaviorKind.Excited),
+                    _ => Create(BehaviorKind.Happy),
+                });
                 break;
 
             case InteractionKind.DoubleClick:
@@ -315,6 +323,9 @@ public sealed class Brain
                 break;
             case CompanionCommand.Happy:
                 if (!WakeIfSleeping()) Interrupt(Create(BehaviorKind.Happy));
+                break;
+            case CompanionCommand.Signature:
+                if (!WakeIfSleeping()) Interrupt(Create(BehaviorKind.Signature));
                 break;
             case CompanionCommand.Sleep:
                 if (!IsAsleepish) Interrupt(new DrowsyBehavior());

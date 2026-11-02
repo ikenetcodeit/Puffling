@@ -1,4 +1,5 @@
 using System.Numerics;
+using Puffling.Core.Character;
 
 namespace Puffling.Core.Animation;
 
@@ -25,6 +26,8 @@ public interface IClip
     Pose Evaluate(float t, in ClipContext c);
 }
 
+public enum GroupGameKind { Chase, Spar, Pong }
+
 public static class Clips
 {
     public static readonly IClip Idle = new IdleClip();
@@ -41,11 +44,83 @@ public static class Clips
     public static readonly IClip Follow = new TravelClip(happy: true);
     public static readonly IClip Dragged = new DraggedClip();
     public static readonly IClip Settle = new SettleClip();
+    private static readonly IClip RedMove = new SignatureClip(CompanionVariant.Red);
+    private static readonly IClip BlueMove = new SignatureClip(CompanionVariant.Blue);
+    private static readonly IClip GreenMove = new SignatureClip(CompanionVariant.Green);
+    public static IClip Signature(CompanionVariant variant) => variant switch
+    {
+        CompanionVariant.Blue => BlueMove,
+        CompanionVariant.Green => GreenMove,
+        _ => RedMove,
+    };
     public static IClip PairPlay(int slot) => new PairPlayClip(slot);
     public static IClip TrioPlay(int slot) => new TrioPlayClip(slot);
+    public static IClip GroupGame(GroupGameKind kind, int slot) => new GroupGameClip(kind, slot);
 
     internal static float Hop(float t, float freq) => MathF.Abs(MathF.Sin(t * freq));
     internal static float Decay(float t, float rate) => MathF.Exp(-t * rate);
+
+    private sealed class SignatureClip(CompanionVariant variant) : IClip
+    {
+        public string Name => variant switch
+        {
+            CompanionVariant.Red => "Red rally",
+            CompanionVariant.Blue => "Blue twirl",
+            _ => "Green dash",
+        };
+        public float? Duration => 2.6f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            switch (variant)
+            {
+                case CompanionVariant.Red:
+                    p.Expression = Expression.Curious;
+                    p.Yaw = 0.22f * MathF.Sin(t * 2.5f);
+                    p.Pitch = 0.12f * MathF.Sin(t * 4.5f);
+                    p.LookX = t < 1.3f ? -1f : 1f;
+                    p.OffsetY = -2f * Hop(t, 4f);
+                    p.Particles = ParticleKind.Sparkles;
+                    break;
+                case CompanionVariant.Blue:
+                    p.Expression = Expression.Happy;
+                    p.Yaw = SmoothStep(t / 2.6f) * MathF.Tau;
+                    p.OffsetY = -4.5f * Hop(t, 7f);
+                    p.Roll = 0.12f * MathF.Sin(t * 7f);
+                    p.TentacleSpread = 0.3f;
+                    p.Particles = ParticleKind.Hearts;
+                    break;
+                case CompanionVariant.Green:
+                    p.Expression = Expression.Excited;
+                    p.OffsetX = 3.5f * MathF.Sin(t * 10f);
+                    p.OffsetY = -3f * Hop(t, 10f);
+                    p.Roll = -0.2f * MathF.Sin(t * 10f);
+                    p.TentacleSway = -0.35f * MathF.Sin(t * 10f);
+                    p.Particles = ParticleKind.Sparkles;
+                    break;
+            }
+            return p;
+        }
+    }
+
+    private sealed class GroupGameClip(GroupGameKind kind, int slot) : IClip
+    {
+        public string Name => kind.ToString();
+        public float? Duration => null;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            p.Expression = kind == GroupGameKind.Pong ? Expression.Curious : Expression.Excited;
+            p.LookX = c.LookDir.X;
+            p.LookY = -c.LookDir.Y;
+            p.TentacleAmplitude = kind == GroupGameKind.Chase ? 0.36f : 0.48f;
+            p.TentacleSpeed = kind == GroupGameKind.Chase ? 7f : 10f;
+            p.Roll = 0.14f * MathF.Sin(t * (kind == GroupGameKind.Spar ? 9f : 5f) + slot * MathF.PI);
+            p.OffsetY = -3.5f * Hop(t + slot * 0.4f, kind == GroupGameKind.Spar ? 8f : 5f);
+            p.Particles = kind == GroupGameKind.Pong ? ParticleKind.Notes : ParticleKind.Sparkles;
+            return p;
+        }
+    }
 
     private sealed class PairPlayClip(int slot) : IClip
     {

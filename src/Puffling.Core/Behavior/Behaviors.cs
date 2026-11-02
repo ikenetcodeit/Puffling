@@ -8,7 +8,7 @@ public enum BehaviorKind
 {
     Idle, Wander, Travel, Curious, Happy, Excited, Surprised, Dance, Affectionate,
     Follow, ComeHere, Drowsy, Sleeping, Waking, Returning, Dragged, Settling,
-    PairPlay, TrioPlay,
+    PairPlay, TrioPlay, GroupChase, GroupSpar, GroupPong, Signature,
 }
 
 /// <summary>
@@ -90,7 +90,7 @@ public sealed class CuriousBehavior : Behavior
     public override BehaviorKind Kind => BehaviorKind.Curious;
     public override void Enter(Brain b)
     {
-        _duration = b.RandomRange(2.5f, 5f);
+        _duration = b.RandomRange(2.5f, 5f) * b.Variant.Curiosity();
         b.Motion.Release(b.Speed(120));
         if (!_atCursor)
         {
@@ -122,7 +122,7 @@ public sealed class ClipBehavior : Behavior
     private readonly float _blend;
     public ClipBehavior(BehaviorKind kind, IClip clip, float blend = 0.2f) { _kind = kind; _clip = clip; _blend = blend; }
     public override BehaviorKind Kind => _kind;
-    public override bool Interruptible => _kind is not (BehaviorKind.Dance or BehaviorKind.Settling);
+    public override bool Interruptible => _kind is not (BehaviorKind.Dance or BehaviorKind.Signature or BehaviorKind.Settling);
     public override void Enter(Brain b)
     {
         if (_kind != BehaviorKind.Settling) b.Motion.Release(b.Speed(200));
@@ -197,6 +197,81 @@ public sealed class GroupPlayBehavior : Behavior
     }
 }
 
+/// <summary>Shared chase, gentle bounce sparring, or a three-pet pong rally.</summary>
+public sealed class GroupGameBehavior : Behavior
+{
+    private readonly Vector2 _centre;
+    private readonly int _slot, _count;
+    private readonly float _radius;
+    private readonly GroupGameKind _game;
+    public override BehaviorKind Kind => _game switch
+    {
+        GroupGameKind.Chase => BehaviorKind.GroupChase,
+        GroupGameKind.Spar => BehaviorKind.GroupSpar,
+        _ => BehaviorKind.GroupPong,
+    };
+    public override bool Interruptible => false;
+
+    public GroupGameBehavior(Vector2 centre, int slot, int count, float radius, GroupGameKind game)
+    {
+        if (count is not (2 or 3) || slot < 0 || slot >= count || (game == GroupGameKind.Pong && count != 3))
+            throw new ArgumentOutOfRangeException(nameof(slot));
+        _centre = centre; _slot = slot; _count = count; _radius = radius; _game = game;
+    }
+
+    public override void Enter(Brain b) => b.Animator.Play(Clips.GroupGame(_game, _slot), 0.35f);
+
+    public override bool Update(Brain b, float dt)
+    {
+        float t = MathF.Max(0, Elapsed - 0.7f);
+        Vector2 offset;
+        float speed;
+        switch (_game)
+        {
+            case GroupGameKind.Chase:
+                float angle = t * 1.35f - _slot * MathF.Tau / _count;
+                offset = new Vector2(_radius * MathF.Cos(angle), _radius * 0.6f * MathF.Sin(angle));
+                speed = 150;
+                break;
+            case GroupGameKind.Spar:
+                float a = _slot * MathF.Tau / _count;
+                float distance = _radius * (0.50f + 0.50f * Hop(t * 3.4f + _slot * 0.4f));
+                offset = new Vector2(distance * MathF.Cos(a), distance * 0.6f * MathF.Sin(a));
+                speed = 125;
+                break;
+            default: // Three-pet pong: the third pet is the ball between two bobbing paddles.
+                float ballY = _radius * 0.36f * MathF.Sin(t * 1.8f);
+                offset = _slot switch
+                {
+                    0 => new Vector2(-_radius, ballY * 0.85f),
+                    1 => new Vector2(_radius, ballY * 0.85f),
+                    _ => new Vector2(_radius * 0.72f * MathF.Sin(t * 2.7f), ballY),
+                };
+                speed = _slot == 2 ? 180 : 100;
+                break;
+        }
+
+        if (b.CanMove)
+        {
+            var target = b.Geometry.MonitorAt(_centre).WorkArea.Deflate(b.Margin).Clamp(_centre + offset * b.DpiScale);
+            b.Motion.MoveTo(target, b.Speed(speed), b.Speed(380));
+        }
+        else b.Motion.Release(b.Speed(200));
+
+        Vector2 look = _centre - b.Motion.Position;
+        b.LookOverride = look.LengthSquared() > 1 ? Vector2.Normalize(look) : Vector2.Zero;
+        return Elapsed < 8.5f;
+    }
+
+    public override void Exit(Brain b)
+    {
+        b.Motion.Release(b.Speed(170));
+        b.LookOverride = null;
+    }
+
+    private static float Hop(float x) => MathF.Abs(MathF.Sin(x));
+}
+
 public sealed class AffectionateBehavior : Behavior
 {
     public double LastPet;
@@ -207,7 +282,12 @@ public sealed class AffectionateBehavior : Behavior
         b.Motion.Release(b.Speed(150));
         b.Animator.Play(Clips.Affection, 0.3f);
     }
-    public override bool Update(Brain b, float dt) => b.Now - LastPet < 2.5;
+    public override bool Update(Brain b, float dt) => b.Now - LastPet < (b.Variant switch
+    {
+        CompanionVariant.Blue => 3.2,
+        CompanionVariant.Green => 1.9,
+        _ => 2.5,
+    });
 }
 
 public sealed class FollowBehavior : Behavior

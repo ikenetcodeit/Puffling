@@ -32,7 +32,7 @@ public sealed class CompanionApp : NativeWindow, IDisposable
 
     private enum Cmd
     {
-        Dance = 1, Happy, ComeHere, Sleep, Wake, Follow, Wander, Freeze, OnTop, Pause, SleepMode,
+        Dance = 1, Happy, Signature, ComeHere, Sleep, Wake, Follow, Wander, Freeze, OnTop, Pause, SleepMode,
         Spawn, Remove, Settings, Reset, Exit,
     }
 
@@ -382,6 +382,12 @@ public sealed class CompanionApp : NativeWindow, IDisposable
 
             Item(Cmd.Dance, "Dance!");
             Item(Cmd.Happy, "Cheer up");
+            Item(Cmd.Signature, target.Pet.Variant switch
+            {
+                CompanionVariant.Red => "Lead a rally",
+                CompanionVariant.Blue => "Do a twirl",
+                _ => "Show a dash",
+            });
             Item(Cmd.ComeHere, "Come here");
             if (asleep) Item(Cmd.Wake, "Wake up"); else Item(Cmd.Sleep, "Go to sleep");
             Sep();
@@ -418,6 +424,7 @@ public sealed class CompanionApp : NativeWindow, IDisposable
         {
             case Cmd.Dance: target.Pet.Execute(CompanionCommand.Dance); break;
             case Cmd.Happy: target.Pet.Execute(CompanionCommand.Happy); break;
+            case Cmd.Signature: target.Pet.Execute(CompanionCommand.Signature); break;
             case Cmd.ComeHere: target.Pet.Execute(CompanionCommand.ComeHere); break;
             case Cmd.Sleep: target.Pet.Execute(CompanionCommand.Sleep); break;
             case Cmd.Wake: target.Pet.Execute(CompanionCommand.Wake); break;

@@ -26,7 +26,7 @@ public sealed class PufflingModel
         new(-4f, -5f, -3f), new(0f, -5f, -3f), new(4f, -5f, -3f),
     };
 
-    private readonly FaceTextures _faces = new();
+    private readonly FaceTextures _faces;
     private readonly BoxPart _body, _harnessTop, _harnessLeft, _harnessRight, _harnessFront,
         _blueLeft, _blueRight, _goggleLeft, _goggleRight, _lensLeft, _lensRight;
     private readonly BoxPart[,] _segments = new BoxPart[TentacleCount, SegmentsPerTentacle];
@@ -34,8 +34,9 @@ public sealed class PufflingModel
 
     public IReadOnlyList<BoxPart> Parts => _all;
 
-    public PufflingModel(CompanionVariant variant = CompanionVariant.Classic)
+    public PufflingModel(CompanionVariant variant = CompanionVariant.Red)
     {
+        _faces = new FaceTextures(variant);
         var side = Tex(10, 10, (x, y) => y == 0 ? Palette.BodyLight : y >= 8 ? Palette.BodyShadow : Palette.Body, 3);
         var back = Tex(12, 10, (x, y) => y == 0 ? Palette.BodyLight : y >= 8 ? Palette.BodyShadow : Palette.Body, 5);
         var top = Tex(12, 10, (x, y) => Palette.BodyLight, 7);
@@ -43,8 +44,7 @@ public sealed class PufflingModel
         var leather = Tex(4, 2, (x, y) => y == 1 ? Palette.HarnessDark : Palette.Harness, 13);
         var leatherDark = Tex(2, 2, (x, y) => Palette.HarnessDark, 15);
         var blue = Tex(2, 2, (x, y) => Palette.Accent(variant), 17);
-        var frontTrim = variant == CompanionVariant.Classic ? leather :
-            Tex(12, 2, (x, y) => x is > 1 and < 10 ? Palette.Accent(variant) : Palette.Harness, 13);
+        var frontTrim = Tex(12, 2, (x, y) => x is > 1 and < 10 ? Palette.Accent(variant) : Palette.Harness, 13);
         var glass = Tex(2, 2, (x, y) => x == 0 ? Palette.GoggleLight : Palette.Lens(variant), 19);
         var seg = new[]
         {

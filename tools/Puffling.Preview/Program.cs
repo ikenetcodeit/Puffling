@@ -56,7 +56,7 @@ else if (mode == "variants")
         foreach (CompanionVariant variant in Enum.GetValues<CompanionVariant>())
         {
             var pose = Pose.Rest;
-            pose.Expression = Expression.Happy;
+            pose.Expression = Expression.Neutral;
             var styled = new CharacterRenderer(variant);
             var fb = styled.Render(pose, 0.6f, 0f, size, particles: false);
             PngWriter.Write(Path.Combine(outDir, $"{size}_{variant}.png"), fb.Width, fb.Height, fb.Color);

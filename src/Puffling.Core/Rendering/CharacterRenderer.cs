@@ -22,7 +22,7 @@ public sealed class CharacterRenderer
     private FrameBuffer? _fb;
     private static readonly Lazy<(float maxAbsX, float minY, float maxY)> Extents = new(ComputeExtents);
 
-    public CharacterRenderer(CompanionVariant variant = CompanionVariant.Classic) => _model = new PufflingModel(variant);
+    public CharacterRenderer(CompanionVariant variant = CompanionVariant.Red) => _model = new PufflingModel(variant);
 
     public FrameBuffer Render(in Pose pose, float tentaclePhase, float particleTime, int sizePx, bool particles = true)
     {

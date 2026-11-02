@@ -29,13 +29,17 @@ Puffling has more to do than float in one spot. It can wander, travel between mo
 
 ### Bring a couple of friends
 
-Right-click a ghast or the tray icon and choose **Spawn another**. You can have **up to three** on screen at once. Each one wanders and reacts on its own. When they share a monitor, they occasionally meet for a little performance:
+Right-click a ghast or the tray icon and choose **Spawn another**. You can have **up to three** on screen at once. Each one wanders and reacts on its own. When they share a monitor, they occasionally meet for a little performance or game:
 
 | Two ghasts: a mirrored, heart-filled flyby | Three ghasts: a tiny musical carousel |
 | :---: | :---: |
 | <img src="docs/previews/happy-ghast/pair-play.gif" alt="Two Happy Ghasts float around each other, hopping in turns with hearts" width="300"> | <img src="docs/previews/happy-ghast/trio-carousel.gif" alt="Three Happy Ghasts circle together with staggered hops and music notes" width="300"> |
 
-Each Puffling keeps its own blue, teal, or lavender harness accent, along with a slightly different idle pace and wandering style. Their looks stay with their roster positions after restart. Click or drag one and the whole group gives way to you. Right-click a specific ghast for **Remove this Puffling**, or use **Remove newest** in the tray menu. Puffling remembers how many you had and where they were after restart.
+| Chase each other | Bounce sparring | Three-Puffling pong |
+| :---: | :---: | :---: |
+| <img src="docs/previews/happy-ghast/chase.gif" alt="Three Pufflings chasing in a loop" width="220"> | <img src="docs/previews/happy-ghast/spar.gif" alt="Two Pufflings bouncing toward and away from each other" width="220"> | <img src="docs/previews/happy-ghast/pong.gif" alt="A green Puffling bouncing between red and blue Pufflings" width="220"> |
+
+The **red** Puffling is composed and curious, the **blue** one is bubbly and playful, and the **green** one is bold and quick. Their harness colors, faces, idle pace, wandering, and reactions reflect those temperaments. Each has its own move in the right-click menu: *Lead a rally*, *Do a twirl*, or *Show a dash*. Their looks stay with their roster positions after restart. Click or drag one and the whole group gives way to you. Right-click a specific ghast for **Remove this Puffling**, or use **Remove newest** in the tray menu. Puffling remembers how many you had and where they were after restart.
 
 | Pet me | Pick me up | Off I go |
 | :---: | :---: | :---: |
@@ -78,7 +82,7 @@ Puffling checks for updates every five minutes. The daily bubble lists up to thr
 | You | Puffling |
 | --- | --- |
 | Hover nearby | Looks toward the cursor |
-| Click | Gives you a happy bounce; three quick clicks make it excited |
+| Click | Red studies you, blue gives a happy bounce, and green gets excited; three quick clicks excite any Puffling |
 | Double-click | Dances |
 | Stroke back and forth without clicking | Shows hearts |
 | Drag and release | Dangles, follows, and settles after a gentle toss |

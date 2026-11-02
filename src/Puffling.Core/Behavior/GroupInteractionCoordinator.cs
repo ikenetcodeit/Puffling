@@ -1,4 +1,5 @@
 using System.Numerics;
+using Puffling.Core.Animation;
 
 namespace Puffling.Core.Behavior;
 
@@ -8,6 +9,11 @@ public sealed class GroupInteractionCoordinator
     private readonly List<Companion> _active = new(3);
     private int _lastCount = -1;
     private double _nextAt;
+    private int _routineIndex;
+
+    private static bool IsGroupBehavior(BehaviorKind kind) => kind is
+        BehaviorKind.PairPlay or BehaviorKind.TrioPlay or BehaviorKind.GroupChase or
+        BehaviorKind.GroupSpar or BehaviorKind.GroupPong;
 
     public void Tick(double now, IReadOnlyList<Companion> companions)
     {
@@ -16,12 +22,13 @@ public sealed class GroupInteractionCoordinator
             Cancel();
             _lastCount = companions.Count;
             _nextAt = now + 8;
+            _routineIndex = 0;
         }
 
         if (_active.Count > 0)
         {
             if (_active.Count != companions.Count ||
-                _active.Any(p => !companions.Contains(p) || p.CurrentBehavior is not (BehaviorKind.PairPlay or BehaviorKind.TrioPlay)))
+                _active.Any(p => !companions.Contains(p) || !IsGroupBehavior(p.CurrentBehavior)))
                 Cancel();
             else return;
         }
@@ -46,10 +53,19 @@ public sealed class GroupInteractionCoordinator
         foreach (var p in companions) centre += p.Position;
         centre = area.Clamp(centre / companions.Count);
 
+        GroupGameKind? game = (_routineIndex++ % (companions.Count == 3 ? 4 : 3)) switch
+        {
+            1 => GroupGameKind.Chase,
+            2 => GroupGameKind.Spar,
+            3 => GroupGameKind.Pong,
+            _ => null,
+        };
         for (int i = 0; i < companions.Count; i++)
         {
             var p = companions[i];
-            p.Brain.Interrupt(new GroupPlayBehavior(centre, i, companions.Count, radius));
+            p.Brain.Interrupt(game is { } kind
+                ? new GroupGameBehavior(centre, i, companions.Count, radius, kind)
+                : new GroupPlayBehavior(centre, i, companions.Count, radius));
             _active.Add(p);
         }
         _nextAt = now + 45;
@@ -58,7 +74,7 @@ public sealed class GroupInteractionCoordinator
     private void Cancel()
     {
         foreach (var p in _active)
-            if (p.CurrentBehavior is BehaviorKind.PairPlay or BehaviorKind.TrioPlay)
+            if (IsGroupBehavior(p.CurrentBehavior))
                 p.Brain.Interrupt(new IdleBehavior());
         _active.Clear();
     }

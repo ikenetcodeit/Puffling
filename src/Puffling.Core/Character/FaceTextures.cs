@@ -13,9 +13,11 @@ public sealed class FaceTextures
     public const int W = 12, H = 10;
     private readonly Dictionary<(Expression, int, int), Texture> _cache = new();
     private readonly Texture _base;
+    private readonly CompanionVariant _variant;
 
-    public FaceTextures()
+    public FaceTextures(CompanionVariant variant = CompanionVariant.Red)
     {
+        _variant = variant;
         _base = new Texture(W, H);
         for (int y = 0; y < H; y++)
             for (int x = 0; x < W; x++)
@@ -52,8 +54,14 @@ public sealed class FaceTextures
 
         void Cheeks()
         {
-            t.Set(1, 6, Palette.Blush); t.Set(2, 6, Palette.Blush);
-            t.Set(9, 6, Palette.Blush); t.Set(10, 6, Palette.Blush);
+            uint blush = _variant switch
+            {
+                CompanionVariant.Red => 0xFFE9C4B9,
+                CompanionVariant.Blue => 0xFFF4B6C6,
+                _ => 0xFFE4D7B4,
+            };
+            t.Set(1, 6, blush); t.Set(2, 6, blush);
+            t.Set(9, 6, blush); t.Set(10, 6, blush);
         }
         void OpenEyes(int h, bool doubleShine)
         {
@@ -138,6 +146,28 @@ public sealed class FaceTextures
                 }
                 Cheeks(); OpenSmile(false);
                 break;
+        }
+        if (e is Expression.Neutral or Expression.Curious or Expression.Excited)
+        {
+            switch (_variant)
+            {
+                case CompanionVariant.Red: // composed, level brows
+                    t.Set(2, 2, Palette.Eye); t.Set(3, 2, Palette.Eye);
+                    t.Set(8, 2, Palette.Eye); t.Set(9, 2, Palette.Eye);
+                    break;
+                case CompanionVariant.Blue: // bright, wide-eyed look
+                    t.Set(3 + lx, 5 + ey, Palette.EyeShine);
+                    t.Set(9 + lx, 5 + ey, Palette.EyeShine);
+                    break;
+                case CompanionVariant.Green: // angled, determined brows
+                    t.Set(2, 2, Palette.Eye); t.Set(3, 3, Palette.Eye);
+                    t.Set(8, 3, Palette.Eye); t.Set(9, 2, Palette.Eye);
+                    if (e == Expression.Neutral)
+                    {
+                        t.Set(3, 6, Palette.Body); t.Set(8, 6, Palette.Body);
+                    }
+                    break;
+            }
         }
         return t;
     }

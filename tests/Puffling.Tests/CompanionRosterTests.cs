@@ -3,6 +3,7 @@ using Puffling.Core;
 using Puffling.Core.Animation;
 using Puffling.Core.Behavior;
 using Puffling.Core.Character;
+using Puffling.Core.Interaction;
 using Puffling.Core.Movement;
 using Puffling.Core.Settings;
 
@@ -107,6 +108,69 @@ public static class CompanionRosterTests
         var restoredHashes = restored.Select(p => p.Render().Frame.ComputeHash()).ToArray();
         Assert.True(firstHashes.Distinct().Count() == 3, "styles look different at desktop size");
         Assert.True(firstHashes.SequenceEqual(restoredHashes), "roster styles persist across recreation");
+    }
+
+    [Test]
+    public static void EachVariant_HasItsOwnRequestedAction()
+    {
+        var geometry = ScreenGeometry.Single(1920, 1080);
+        var names = new HashSet<string>();
+        for (int i = 0; i < 3; i++)
+        {
+            var pet = new Companion(new CompanionSettings(), geometry, seed: i + 1,
+                variant: CompanionVariants.ForSlot(i));
+            pet.Execute(CompanionCommand.Signature);
+            Assert.Equal(BehaviorKind.Signature, pet.CurrentBehavior, "signature action starts");
+            names.Add(pet.Animator.Clip.Name);
+        }
+        Assert.Equal(3, names.Count, "each variant has a different move");
+    }
+
+    [Test]
+    public static void EachVariant_ReactsDifferentlyToAClick()
+    {
+        var expected = new[] { BehaviorKind.Curious, BehaviorKind.Happy, BehaviorKind.Excited };
+        for (int i = 0; i < 3; i++)
+        {
+            var pet = new Companion(new CompanionSettings(), ScreenGeometry.Single(1920, 1080),
+                seed: i + 1, variant: CompanionVariants.ForSlot(i));
+            pet.Brain.Handle(new InteractionEvent(InteractionKind.Click, pet.Position, Vector2.Zero));
+            Assert.Equal(expected[i], pet.CurrentBehavior, $"{pet.Variant} click response");
+        }
+    }
+
+    [Test]
+    public static void GroupGames_CycleAndStayOnScreen()
+    {
+        var geometry = ScreenGeometry.Single(1920, 1080);
+        foreach (int count in new[] { 2, 3 })
+        {
+            var pets = MakePets(geometry, count);
+            var coordinator = new GroupInteractionCoordinator();
+            var expected = count == 2
+                ? new[] { BehaviorKind.PairPlay, BehaviorKind.GroupChase, BehaviorKind.GroupSpar }
+                : new[] { BehaviorKind.TrioPlay, BehaviorKind.GroupChase, BehaviorKind.GroupSpar, BehaviorKind.GroupPong };
+            coordinator.Tick(0, pets);
+            for (int routine = 0; routine < expected.Length; routine++)
+            {
+                coordinator.Tick(8 + routine * 60, pets);
+                Assert.True(pets.All(p => p.CurrentBehavior == expected[routine]), $"routine {routine} starts together");
+                for (int frame = 0; frame < 80; frame++)
+                {
+                    foreach (var pet in pets)
+                    {
+                        pet.Tick(0.1f, new FrameInputs(new Vector2(3000, 3000), 20));
+                        Assert.True(geometry.IsComfortablyVisible(pet.Position, pet.Brain.Margin),
+                            $"{expected[routine]} stays on screen");
+                    }
+                }
+                pets[0].Execute(CompanionCommand.Happy);
+                coordinator.Tick(8.1 + routine * 60, pets);
+                Assert.True(pets.Skip(1).All(p => p.CurrentBehavior == BehaviorKind.Idle),
+                    $"{expected[routine]} yields to direct attention");
+                foreach (var pet in pets) pet.Brain.Interrupt(new IdleBehavior());
+            }
+        }
     }
 
     [Test]

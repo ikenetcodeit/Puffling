@@ -14,16 +14,16 @@ public static class Palette
 
     public static uint Accent(CompanionVariant variant) => variant switch
     {
-        CompanionVariant.Teal => 0xFF3E8C80,
-        CompanionVariant.Lavender => 0xFF8764AC,
-        _ => HarnessBlue,
+        CompanionVariant.Red => 0xFFDA4B59,
+        CompanionVariant.Green => 0xFF43A565,
+        _ => 0xFF4C8FE3,
     };
 
     public static uint Lens(CompanionVariant variant) => variant switch
     {
-        CompanionVariant.Teal => 0xFF80D9CE,
-        CompanionVariant.Lavender => 0xFFC4B1E8,
-        _ => GoggleGlass,
+        CompanionVariant.Red => 0xFFFF9CA6,
+        CompanionVariant.Green => 0xFF8ADDA2,
+        _ => 0xFF8BCCF6,
     };
 
     public const uint Eye = 0xFF41352F;
