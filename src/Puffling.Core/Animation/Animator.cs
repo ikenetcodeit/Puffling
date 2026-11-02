@@ -63,6 +63,14 @@ public sealed class Animator
         p = ApplyIntensity(p, Intensity);
         p.Clamp();
 
+        // Velocity can change sign in one frame when a destination changes. Smooth the
+        // facing independently of the clip blend so travel never snaps on reversals.
+        if (ReferenceEquals(Clip, Clips.Travel) || ReferenceEquals(Clip, Clips.Follow))
+        {
+            float turnBlend = 1f - MathF.Exp(-dt / 0.16f);
+            p.Yaw = Current.Yaw + (p.Yaw - Current.Yaw) * turnBlend;
+        }
+
         // Integrate phases from blended speeds (no phase discontinuities when clips change).
         BobPhase = Wrap(BobPhase + p.BobSpeed * dt);
         TentaclePhase = Wrap(TentaclePhase + p.TentacleSpeed * dt);

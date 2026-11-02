@@ -300,7 +300,11 @@ public static class Clips
             float vy = Math.Clamp(c.Velocity.Y / refSpeed, -1.5f, 1.5f);
             float speed = MathF.Min(1.5f, c.Velocity.Length() / refSpeed);
             p.Expression = _happy ? Expression.Happy : Expression.Neutral;
-            p.Yaw = vx * 0.35f;
+            // The renderer's resting camera already favors the left side. Turn farther
+            // to the right than to the left so both directions read at icon size.
+            // Reach the full turn even at the slower wander speed.
+            float turn = Math.Clamp(c.Velocity.X / 25f, -1f, 1f);
+            p.Yaw = turn * (0.75f + 0.25f * turn);
             p.Roll = -vx * 0.16f;                 // lean into the direction of travel
             p.Pitch = vy * 0.10f;
             p.TentacleSway = -vx * 0.45f;         // tentacles trail behind

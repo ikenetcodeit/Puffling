@@ -4,7 +4,7 @@ Work through the active milestones in order. Item numbers are written into each 
 
 ## Milestone 1 — Pet movement
 
-- [ ] **1. Face the direction of travel.** The Happy Ghast usually shows its right side and faces left at rest. Make travel right visibly face right and travel left face left. Check the fixed camera angle and travel clip yaw at normal desktop size, with smooth turns on starts, stops, and reversals.
+- [x] **1. Face the direction of travel.** The Happy Ghast usually shows its right side and faces left at rest. Make travel right visibly face right and travel left face left. Check the fixed camera angle and travel clip yaw at normal desktop size, with smooth turns on starts, stops, and reversals.
 
 - [ ] **2. Cross between displays autonomously.** Review destination selection, path visibility, and return-to-screen behavior so Pufflings occasionally travel between connected displays without being dragged. Avoid real gaps and keep them in usable screen areas.
 

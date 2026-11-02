@@ -83,6 +83,38 @@ public static class RenderingTests
     }
 }
 
+public static class TravelFacingTests
+{
+    [Test]
+    public static void TravelAndFollow_FaceTheirHorizontalDirection_AtWanderSpeed()
+    {
+        foreach (var clip in new[] { Clips.Travel, Clips.Follow })
+        {
+            var left = clip.Evaluate(0f, new ClipContext { Velocity = new Vector2(-42, 0) });
+            var right = clip.Evaluate(0f, new ClipContext { Velocity = new Vector2(42, 0) });
+            Assert.True(left.Yaw + CharacterRenderer.CameraYaw < -0.6f, $"{clip.Name} should face left");
+            Assert.True(right.Yaw + CharacterRenderer.CameraYaw > 0.5f, $"{clip.Name} should face right");
+        }
+    }
+
+    [Test]
+    public static void ReversingTravel_TurnsSmoothlyAndSettles()
+    {
+        var anim = new Animator(new Random(1));
+        anim.Play(Clips.Travel, 0f);
+        var right = new ClipContext { Velocity = new Vector2(42, 0) };
+        var left = new ClipContext { Velocity = new Vector2(-42, 0) };
+        for (int i = 0; i < 90; i++) anim.Update(1f / 60f, right);
+        Assert.True(anim.Current.Yaw > 0.9f, "right turn should settle");
+
+        float before = anim.Current.Yaw;
+        anim.Update(1f / 60f, left);
+        Assert.True(anim.Current.Yaw < before && anim.Current.Yaw > 0.7f, "reversal should begin without snapping");
+        for (int i = 0; i < 90; i++) anim.Update(1f / 60f, left);
+        Assert.True(anim.Current.Yaw < -0.45f, "left turn should settle");
+    }
+}
+
 public static class PointerTests
 {
     private static List<InteractionEvent> Drain(PointerTracker p)

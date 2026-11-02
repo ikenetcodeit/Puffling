@@ -37,6 +37,18 @@ else if (mode == "icon")
         PngWriter.Write(Path.Combine(outDir, $"icon_{size}.png"), fb.Width, fb.Height, fb.Color);
     }
 }
+else if (mode == "travel-facing")
+{
+    foreach (int size in new[] { 32, 48, 96 })
+        foreach (int direction in new[] { -1, 0, 1 })
+        {
+            var pose = direction == 0 ? Pose.Rest : Clips.Travel.Evaluate(0f,
+                new ClipContext { Velocity = new System.Numerics.Vector2(direction * 42f, 0) });
+            var fb = renderer.Render(pose, 0.6f, 0f, size, particles: false);
+            string label = direction < 0 ? "left" : direction > 0 ? "right" : "rest";
+            PngWriter.Write(Path.Combine(outDir, $"{size}_{label}.png"), fb.Width, fb.Height, fb.Color);
+        }
+}
 else
 {
     SimulationPreview.Run(outDir, mode);

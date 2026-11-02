@@ -46,6 +46,10 @@
     {
       "date": "2026-11-02",
       "summary": "Deferred the desktop assistant milestones to the bottom of the TODO and prioritized pet movement, behavior, and presentation."
+    },
+    {
+      "date": "2026-11-02",
+      "summary": "Made travel and follow face left or right clearly at desktop sizes, smoothed turns on reversals, added regression tests and facing previews, and completed TODO 1."
     }
   ]
 }
