@@ -34,7 +34,7 @@ public sealed class PufflingModel
 
     public IReadOnlyList<BoxPart> Parts => _all;
 
-    public PufflingModel()
+    public PufflingModel(CompanionVariant variant = CompanionVariant.Classic)
     {
         var side = Tex(10, 10, (x, y) => y == 0 ? Palette.BodyLight : y >= 8 ? Palette.BodyShadow : Palette.Body, 3);
         var back = Tex(12, 10, (x, y) => y == 0 ? Palette.BodyLight : y >= 8 ? Palette.BodyShadow : Palette.Body, 5);
@@ -42,8 +42,10 @@ public sealed class PufflingModel
         var bottom = Tex(12, 10, (x, y) => Palette.BodyShadow, 9);
         var leather = Tex(4, 2, (x, y) => y == 1 ? Palette.HarnessDark : Palette.Harness, 13);
         var leatherDark = Tex(2, 2, (x, y) => Palette.HarnessDark, 15);
-        var blue = Tex(2, 2, (x, y) => Palette.HarnessBlue, 17);
-        var glass = Tex(2, 2, (x, y) => x == 0 ? Palette.GoggleLight : Palette.GoggleGlass, 19);
+        var blue = Tex(2, 2, (x, y) => Palette.Accent(variant), 17);
+        var frontTrim = variant == CompanionVariant.Classic ? leather :
+            Tex(12, 2, (x, y) => x is > 1 and < 10 ? Palette.Accent(variant) : Palette.Harness, 13);
+        var glass = Tex(2, 2, (x, y) => x == 0 ? Palette.GoggleLight : Palette.Lens(variant), 19);
         var seg = new[]
         {
             Tex(2, 2, (x, y) => Palette.Tentacle0, 21),
@@ -59,7 +61,7 @@ public sealed class PufflingModel
         _harnessTop = new BoxPart(new(-6.1f, 4.45f, -5.1f), new(6.1f, 5.4f, 5.1f)).SetAll(TexRegion.Whole(leather));
         _harnessLeft = new BoxPart(new(-6.35f, -0.4f, -3.8f), new(-5.65f, 4.6f, 3.8f)).SetAll(TexRegion.Whole(leather));
         _harnessRight = new BoxPart(new(5.65f, -0.4f, -3.8f), new(6.35f, 4.6f, 3.8f)).SetAll(TexRegion.Whole(leather));
-        _harnessFront = new BoxPart(new(-6f, 3.8f, 5f), new(6f, 4.6f, 5.38f)).SetAll(TexRegion.Whole(leather));
+        _harnessFront = new BoxPart(new(-6f, 3.8f, 5f), new(6f, 4.6f, 5.38f)).SetAll(TexRegion.Whole(frontTrim));
         _blueLeft = new BoxPart(new(-6.45f, 2.4f, -2.9f), new(-6.3f, 4.25f, 2.9f)).SetAll(TexRegion.Whole(blue));
         _blueRight = new BoxPart(new(6.3f, 2.4f, -2.9f), new(6.45f, 4.25f, 2.9f)).SetAll(TexRegion.Whole(blue));
         _goggleLeft = new BoxPart(new(-5.1f, 4.45f, 5.3f), new(-0.4f, 6.5f, 5.85f)).SetAll(TexRegion.Whole(leatherDark));

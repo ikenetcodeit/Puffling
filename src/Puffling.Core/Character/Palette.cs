@@ -12,6 +12,20 @@ public static class Palette
     public const uint GoggleGlass = 0xFF80CEE4;
     public const uint GoggleLight = 0xFFB9F2F6;
 
+    public static uint Accent(CompanionVariant variant) => variant switch
+    {
+        CompanionVariant.Teal => 0xFF3E8C80,
+        CompanionVariant.Lavender => 0xFF8764AC,
+        _ => HarnessBlue,
+    };
+
+    public static uint Lens(CompanionVariant variant) => variant switch
+    {
+        CompanionVariant.Teal => 0xFF80D9CE,
+        CompanionVariant.Lavender => 0xFFC4B1E8,
+        _ => GoggleGlass,
+    };
+
     public const uint Eye = 0xFF41352F;
     public const uint EyeShine = 0xFFFFFFFF;
     public const uint Blush = 0xFFE8D7B7;

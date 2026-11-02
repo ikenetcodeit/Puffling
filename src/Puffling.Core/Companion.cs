@@ -1,6 +1,7 @@
 using System.Numerics;
 using Puffling.Core.Animation;
 using Puffling.Core.Behavior;
+using Puffling.Core.Character;
 using Puffling.Core.Interaction;
 using Puffling.Core.Movement;
 using Puffling.Core.Rendering;
@@ -20,7 +21,7 @@ public readonly record struct RenderResult(FrameBuffer Frame, int Left, int Top,
 /// </summary>
 public sealed class Companion
 {
-    private readonly CharacterRenderer _renderer = new();
+    private readonly CharacterRenderer _renderer;
     private Vector2 _lastCursor;
     private bool _haveCursor;
 
@@ -30,9 +31,13 @@ public sealed class Companion
     public Animator Animator { get; }
     public Brain Brain { get; }
     public PointerTracker Pointer { get; } = new();
+    public CompanionVariant Variant { get; }
 
-    public Companion(CompanionSettings settings, ScreenGeometry geometry, int? seed = null)
+    public Companion(CompanionSettings settings, ScreenGeometry geometry, int? seed = null,
+        CompanionVariant variant = CompanionVariant.Classic)
     {
+        Variant = variant;
+        _renderer = new CharacterRenderer(variant);
         Settings = settings.Normalize();
         Geometry = geometry;
         var rng = seed is { } s ? new Random(s) : new Random();
@@ -44,7 +49,7 @@ public sealed class Companion
         if (settings.LastX is { } x && settings.LastY is { } y) start = new Vector2(x, y);
         Motion.Teleport(start);
 
-        Brain = new Brain(Motion, Animator, geometry, Settings, rng);
+        Brain = new Brain(Motion, Animator, geometry, Settings, rng, variant);
         RefreshScaleInputs();
         // Saved position might be on a monitor that no longer exists.
         if (!geometry.IsComfortablyVisible(Motion.Position, Brain.Margin))

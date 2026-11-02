@@ -2,6 +2,7 @@ using System.Numerics;
 using Puffling.Core;
 using Puffling.Core.Animation;
 using Puffling.Core.Behavior;
+using Puffling.Core.Character;
 using Puffling.Core.Movement;
 using Puffling.Core.Settings;
 
@@ -81,8 +82,31 @@ public static class CompanionRosterTests
     {
         var pets = new Companion[count];
         for (int i = 0; i < count; i++)
-            pets[i] = new Companion(new CompanionSettings { LastX = 850 + i * 120, LastY = 500 }, geometry, i + 100);
+            pets[i] = new Companion(new CompanionSettings { LastX = 850 + i * 120, LastY = 500 }, geometry,
+                i + 100, CompanionVariants.ForSlot(i));
         return pets;
+    }
+
+    [Test]
+    public static void RosterSlots_HaveDistinctPersistentAppearanceAndRhythm()
+    {
+        var geometry = ScreenGeometry.Single(1920, 1080);
+        var variants = Enumerable.Range(0, 3).Select(CompanionVariants.ForSlot).ToArray();
+        Assert.Equal(3, variants.Distinct().Count(), "three distinct roster variants");
+        Assert.True(variants.Select(v => v.IdleDuration()).Distinct().Count() == 3, "idle rhythm differs");
+        Assert.True(variants.Select(v => v.WanderSpeed()).Distinct().Count() == 3, "movement rhythm differs");
+
+        var settings = new CompanionSettings { CompanionCount = 3, LastX = 800, LastY = 500,
+            AdditionalPositions = [new(900, 500), new(1000, 500)] };
+        var firstRun = Enumerable.Range(0, settings.CompanionCount)
+            .Select(i => new Companion(settings.Clone(), geometry, seed: 100 + i, variant: variants[i])).ToArray();
+        var restored = Enumerable.Range(0, settings.Clone().Normalize().CompanionCount)
+            .Select(i => new Companion(settings.Clone(), geometry, seed: 200 + i,
+                variant: CompanionVariants.ForSlot(i))).ToArray();
+        var firstHashes = firstRun.Select(p => p.Render().Frame.ComputeHash()).ToArray();
+        var restoredHashes = restored.Select(p => p.Render().Frame.ComputeHash()).ToArray();
+        Assert.True(firstHashes.Distinct().Count() == 3, "styles look different at desktop size");
+        Assert.True(firstHashes.SequenceEqual(restoredHashes), "roster styles persist across recreation");
     }
 
     [Test]

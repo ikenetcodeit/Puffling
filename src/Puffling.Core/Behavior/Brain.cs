@@ -1,5 +1,6 @@
 using System.Numerics;
 using Puffling.Core.Animation;
+using Puffling.Core.Character;
 using Puffling.Core.Interaction;
 using Puffling.Core.Movement;
 using Puffling.Core.Settings;
@@ -27,6 +28,7 @@ public sealed class Brain
     public Animator Animator { get; }
     public ScreenGeometry Geometry { get; set; }
     public CompanionSettings Settings { get; set; }
+    public CompanionVariant Variant { get; }
 
     // World inputs, refreshed by the Companion each tick (physical px).
     public Vector2 Cursor;
@@ -56,9 +58,10 @@ public sealed class Brain
         [BehaviorKind.Follow] = 60, [BehaviorKind.Surprised] = 30,
     };
 
-    public Brain(Motion motion, Animator animator, ScreenGeometry geometry, CompanionSettings settings, Random rng)
+    public Brain(Motion motion, Animator animator, ScreenGeometry geometry, CompanionSettings settings, Random rng,
+        CompanionVariant variant = CompanionVariant.Classic)
     {
-        Motion = motion; Animator = animator; Geometry = geometry; Settings = settings; Rng = rng;
+        Motion = motion; Animator = animator; Geometry = geometry; Settings = settings; Rng = rng; Variant = variant;
         Current = new IdleBehavior();
         Current.Enter(this);
     }
@@ -174,10 +177,10 @@ public sealed class Brain
             (BehaviorKind.Idle, 1.5f),
             (BehaviorKind.Wander, CanMove ? 2.6f * f * (busy ? 0.6f : 1f) : 0f),
             (BehaviorKind.Travel, CanMove ? 0.9f * f * (busy ? 0.25f : 1f) : 0f),
-            (BehaviorKind.Happy, 0.7f * f),
+            (BehaviorKind.Happy, 0.7f * f * Variant.Playfulness()),
             (BehaviorKind.Curious, 0.8f * f),
-            (BehaviorKind.Excited, 0.25f * f),
-            (BehaviorKind.Dance, 0.15f * f * (busy ? 0.3f : 1f)),
+            (BehaviorKind.Excited, 0.25f * f * Variant.Playfulness()),
+            (BehaviorKind.Dance, 0.15f * f * Variant.Playfulness() * (busy ? 0.3f : 1f)),
             (BehaviorKind.Follow, CanMove && !Settings.FollowCursor ? 0.35f * f : 0f),
         };
 

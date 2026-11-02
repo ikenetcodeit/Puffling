@@ -35,7 +35,7 @@ Right-click a ghast or the tray icon and choose **Spawn another**. You can have 
 | :---: | :---: |
 | <img src="docs/previews/happy-ghast/pair-play.gif" alt="Two Happy Ghasts float around each other, hopping in turns with hearts" width="300"> | <img src="docs/previews/happy-ghast/trio-carousel.gif" alt="Three Happy Ghasts circle together with staggered hops and music notes" width="300"> |
 
-Click or drag one and the whole group gives way to you. Right-click a specific ghast for **Remove this Puffling**, or use **Remove newest** in the tray menu. Puffling remembers how many you had and where they were after restart.
+Each Puffling keeps its own blue, teal, or lavender harness accent, along with a slightly different idle pace and wandering style. Their looks stay with their roster positions after restart. Click or drag one and the whole group gives way to you. Right-click a specific ghast for **Remove this Puffling**, or use **Remove newest** in the tray menu. Puffling remembers how many you had and where they were after restart.
 
 | Pet me | Pick me up | Off I go |
 | :---: | :---: | :---: |

@@ -1,5 +1,6 @@
 using System.Numerics;
 using Puffling.Core.Animation;
+using Puffling.Core.Character;
 
 namespace Puffling.Core.Behavior;
 
@@ -38,7 +39,7 @@ public sealed class IdleBehavior : Behavior
     public override BehaviorKind Kind => BehaviorKind.Idle;
     public override void Enter(Brain b)
     {
-        _duration = b.RandomRange(4f, 9f) / b.Settings.ActivityFrequency;
+        _duration = b.RandomRange(4f, 9f) * b.Variant.IdleDuration() / b.Settings.ActivityFrequency;
         _anchor = b.Motion.Position;
         b.Motion.Release(b.Speed(80));
         b.Animator.Play(Clips.Idle, 0.5f);
@@ -63,7 +64,7 @@ public sealed class WanderBehavior : Behavior
     public override void Enter(Brain b)
     {
         var p = b.Geometry.RandomPointNear(b.Motion.Position, 40 * b.DpiScale, 170 * b.DpiScale, b.Margin, b.Rng);
-        b.Motion.MoveTo(p, b.Speed(42), b.Speed(55));
+        b.Motion.MoveTo(p, b.Speed(42) * b.Variant.WanderSpeed(), b.Speed(55));
         b.Animator.Play(Clips.Travel, 0.6f);
     }
     public override bool Update(Brain b, float dt) => !b.Motion.Arrived && Elapsed < 15f;
@@ -75,7 +76,7 @@ public sealed class TravelBehavior : Behavior
     public override void Enter(Brain b)
     {
         var p = b.Geometry.RandomFarPoint(b.Motion.Position, 320 * b.DpiScale, b.Margin, b.Rng);
-        b.Motion.MoveTo(p, b.Speed(165), b.Speed(120));
+        b.Motion.MoveTo(p, b.Speed(165) * b.Variant.WanderSpeed(), b.Speed(120));
         b.Animator.Play(Clips.Travel, 0.6f);
     }
     public override bool Update(Brain b, float dt) => !b.Motion.Arrived && Elapsed < 30f;

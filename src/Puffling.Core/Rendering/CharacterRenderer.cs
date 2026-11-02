@@ -18,9 +18,11 @@ public sealed class CharacterRenderer
     public const float CameraPitch = 0.24f;  // look slightly down so the top face reads as 3D
     public const float CameraYaw = -0.30f;   // gentle 3/4 view
 
-    private readonly PufflingModel _model = new();
+    private readonly PufflingModel _model;
     private FrameBuffer? _fb;
     private static readonly Lazy<(float maxAbsX, float minY, float maxY)> Extents = new(ComputeExtents);
+
+    public CharacterRenderer(CompanionVariant variant = CompanionVariant.Classic) => _model = new PufflingModel(variant);
 
     public FrameBuffer Render(in Pose pose, float tentaclePhase, float particleTime, int sizePx, bool particles = true)
     {

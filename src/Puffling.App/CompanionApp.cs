@@ -7,6 +7,7 @@ using Puffling.App.Platform;
 using Puffling.App.Windows;
 using Puffling.Core;
 using Puffling.Core.Behavior;
+using Puffling.Core.Character;
 using Puffling.Core.Movement;
 using Puffling.Core.Reminders;
 using Puffling.Core.Settings;
@@ -43,9 +44,9 @@ public sealed class CompanionApp : NativeWindow, IDisposable
         public bool HiddenForFullscreen { get; set; }
 
         public CompanionInstance(IntPtr owner, CompanionSettings settings, ScreenGeometry geometry,
-            Func<double> clock, Action<CompanionInstance, int, int> onMenu)
+            Func<double> clock, Action<CompanionInstance, int, int> onMenu, CompanionVariant variant)
         {
-            Pet = new Companion(settings, geometry);
+            Pet = new Companion(settings, geometry, variant: variant);
             Window = new OverlayWindow(owner, Pet.Pointer, clock, (x, y) => onMenu(this, x, y), settings.AlwaysOnTop);
             LastSavedPosition = Pet.Position;
         }
@@ -132,7 +133,8 @@ public sealed class CompanionApp : NativeWindow, IDisposable
             x = p.X; y = p.Y;
         }
         own.LastX = x; own.LastY = y;
-        var instance = new CompanionInstance(Handle, own, geometry, Now, (slot, px, py) => ShowContextMenu(px, py, slot));
+        var instance = new CompanionInstance(Handle, own, geometry, Now, (slot, px, py) => ShowContextMenu(px, py, slot),
+            CompanionVariants.ForSlot(_companions.Count));
         instance.Pet.Brain.SettingsMutated += () =>
         {
             var next = _settings.Clone();

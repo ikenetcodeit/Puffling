@@ -10,7 +10,7 @@ Work through the active milestones in order. Item numbers are written into each 
 
 ## Milestone 2 — Pet behavior
 
-- [ ] **3. Give multiple Pufflings individuality.** Give each of two or three Pufflings persistent, recognizable differences in appearance and behavior, such as subtle face or harness details, preferred idle poses, movement rhythm, and reaction timing. Keep the Happy Ghast design recognizable and preserve synchronized pair and trio interactions.
+- [x] **3. Give multiple Pufflings individuality.** Give each of two or three Pufflings persistent, recognizable differences in appearance and behavior, such as subtle face or harness details, preferred idle poses, movement rhythm, and reaction timing. Keep the Happy Ghast design recognizable and preserve synchronized pair and trio interactions.
 
 - [ ] **4. React to system activity.** Add lightweight, distinct reactions to useful events such as opening an app or playing music. Prefer Windows events or infrequent checks and keep monitoring off the render loop.
 

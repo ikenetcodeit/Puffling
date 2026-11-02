@@ -1,4 +1,5 @@
 using Puffling.Core.Animation;
+using Puffling.Core.Character;
 using Puffling.Core.Rendering;
 using Puffling.Preview;
 
@@ -47,6 +48,18 @@ else if (mode == "travel-facing")
             var fb = renderer.Render(pose, 0.6f, 0f, size, particles: false);
             string label = direction < 0 ? "left" : direction > 0 ? "right" : "rest";
             PngWriter.Write(Path.Combine(outDir, $"{size}_{label}.png"), fb.Width, fb.Height, fb.Color);
+        }
+}
+else if (mode == "variants")
+{
+    foreach (int size in new[] { 32, 48, 96 })
+        foreach (CompanionVariant variant in Enum.GetValues<CompanionVariant>())
+        {
+            var pose = Pose.Rest;
+            pose.Expression = Expression.Happy;
+            var styled = new CharacterRenderer(variant);
+            var fb = styled.Render(pose, 0.6f, 0f, size, particles: false);
+            PngWriter.Write(Path.Combine(outDir, $"{size}_{variant}.png"), fb.Width, fb.Height, fb.Color);
         }
 }
 else
