@@ -1,0 +1,43 @@
+{
+  "entries": [
+    {
+      "date": "2026-11-01",
+      "summary": "Created the Puffling desktop companion project and illustrated README.",
+      "commit": "d2af00d"
+    },
+    {
+      "date": "2026-11-01",
+      "summary": "Expanded the README with a visual walkthrough of Puffling's behavior.",
+      "commit": "e947b14"
+    },
+    {
+      "date": "2026-11-01",
+      "summary": "Added Outlook calendar and Microsoft To Do reminders in speech bubbles.",
+      "commit": "0f425b8"
+    },
+    {
+      "date": "2026-11-02",
+      "summary": "Added the Happy Ghast skin and refreshed previews and README artwork.",
+      "commits": ["68c8887", "fadb7e7"]
+    },
+    {
+      "date": "2026-11-02",
+      "summary": "Added support for up to three independent Pufflings and synchronized pair and trio interactions.",
+      "commits": ["c48d5f5", "ab859aa"]
+    },
+    {
+      "date": "2026-11-02",
+      "summary": "Documented follow-up work in the project TODO.",
+      "commit": "00637dd"
+    },
+    {
+      "date": "2026-11-02",
+      "summary": "Numbered the TODO items and added plans for a tap-to-open computer overview and desktop assistant features.",
+      "commit": "c3af6f9"
+    },
+    {
+      "date": "2026-11-02",
+      "summary": "Added repository instructions to log completed work and commit each task locally; created the project activity log."
+    }
+  ]
+}
