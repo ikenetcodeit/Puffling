@@ -1,25 +1,37 @@
 # Puffling to do
 
-No particular order. Numbers are stable references, not priorities. Directions below are from the user's point of view.
+Work through these milestones in order. Item numbers are written into each checkbox so they remain visible in Markdown and can be used as references. Finish each milestone with a working app before starting the next one.
 
-1. [ ] **Face the direction of travel.** The Happy Ghast usually shows its right side and faces left in its resting pose. When it travels right, it should visibly turn right; when it travels left, it should face left. Check the renderer's fixed camera angle and the travel clip's yaw so both directions read clearly at normal desktop size. Keep turns smooth when movement starts, stops, or reverses.
+## Milestone 1 — Interaction and data foundations
 
-2. [ ] **Give multiple Pufflings individuality.** With two or three present, they currently look and act too uniform. Give each one a persistent, recognizable variation in appearance and personality, such as subtle face or harness details, preferred idle poses, movement rhythm, and reaction timing. Keep the Happy Ghast design recognizable and avoid desynchronizing the deliberate pair and trio interactions.
+- [ ] **1. Define the tap interaction.** Make a single click available to open an assistant panel while preserving dragging, back-and-forth petting, the double-click dance, and clicks that wake a sleeping Puffling. Decide how a second click closes the panel and how clicking elsewhere dismisses it.
 
-3. [ ] **Let Pufflings cross between displays on their own.** They seem to treat the seam between monitors as a boundary, even though click-drag can move them across. Review destination selection, path visibility, and the return-to-screen behavior. A Puffling should occasionally travel from one connected display to another without being dragged, while avoiding actual gaps and staying inside usable screen areas.
+- [ ] **2. Build a local computer-information service.** Add a Windows-side provider for system status and computer details, separate from the renderer and animation loop. Handle unavailable sensors and disconnected devices gracefully. Collect only the data needed for visible features and never transmit device details.
 
-4. [ ] **Fix README GIF frame smearing.** Some GIFs leave the previous frame visible, so frames pile up into a smear by the end. Regenerate and inspect every README GIF, including the pair and trio previews. Each frame should clear or dispose of the previous frame correctly, and the animation should loop cleanly on GitHub.
+- [ ] **3. Build the assistant panel shell.** Show a small, readable panel beside the tapped Puffling. Keep it inside the usable screen area on multiple monitors and mixed-DPI setups, and avoid taking keyboard focus unnecessarily. Make it possible to add cards and actions without changing the pet's rendering code.
 
-5. [ ] **Later: react to system activity.** Add lightweight, distinct reactions for events such as opening an app or playing music. Decide which signals are useful, then use Windows events or infrequent checks where possible. Keep monitoring off the render loop, limit background work and memory use, and verify that idle CPU use stays low.
+## Milestone 2 — Useful computer assistant
 
-6. [ ] **Open a computer overview by tapping Puffling.** Make a single click open a small, readable panel beside Puffling with a concise snapshot of the computer. Preserve dragging, petting, and the existing double-click dance; define how a second click closes the panel and how it dismisses when the user clicks elsewhere. Keep the panel on screen across monitors and DPI settings without stealing focus unnecessarily.
+- [ ] **4. Add the computer overview.** Show clearly labeled CPU and memory usage, available storage, battery level and charging state when applicable, network connection status, and uptime. Refresh at a modest rate only while the panel is visible.
 
-7. [ ] **Show useful live system status.** Include CPU and memory usage, available storage, battery level and charging state when applicable, network connection status, and uptime. Label units clearly, handle missing sensors gracefully, and refresh only while the overview is visible at a modest rate.
+- [ ] **5. Add computer details on demand.** Let the user expand the panel to see the Windows version, processor, installed memory, graphics adapter, display information, and drive capacities. Keep the default view compact and make long values readable or copyable.
 
-8. [ ] **Show computer details on demand.** Add an expandable details view for Windows version, processor, installed memory, graphics adapter, display information, and drive capacities. Keep the first view compact and make longer values readable or copyable.
+- [ ] **6. Add desktop shortcuts.** Provide clearly labeled actions to open Windows Settings, Task Manager, and relevant storage or network settings. Use Windows-supported launch paths and run each action only after an explicit click.
 
-9. [ ] **Make Puffling a useful desktop assistant.** From the overview, provide a small set of safe actions such as opening Windows Settings, Task Manager, and the relevant storage or network settings page. Show clear labels, use Windows-supported launch paths, and avoid actions that change system state without an explicit click.
+- [ ] **7. Add assistant preferences.** Let the user choose which status cards appear and whether a single click opens the panel. Save these choices with the existing settings and provide a useful default layout.
 
-10. [ ] **Let me choose what computer information appears.** Add settings to enable or hide individual status cards and choose whether the panel opens on a single click. Save those preferences with the existing settings and give the panel a sensible default layout.
+## Milestone 3 — Improve the desktop pet
 
-11. [ ] **Keep computer information local and lightweight.** Collect only the data needed for visible features, keep routine polling off the render loop, and stop sampling when the panel is closed. Do not transmit device details. Check idle CPU and memory use with the panel closed and open.
+- [ ] **8. Face the direction of travel.** The Happy Ghast usually shows its right side and faces left at rest. Make travel right visibly face right and travel left face left. Check the fixed camera angle and travel clip yaw at normal desktop size, with smooth turns on starts, stops, and reversals.
+
+- [ ] **9. Cross between displays autonomously.** Review destination selection, path visibility, and return-to-screen behavior so Pufflings occasionally travel between connected displays without being dragged. Avoid real gaps and keep them in usable screen areas.
+
+- [ ] **10. Give multiple Pufflings individuality.** Give each of two or three Pufflings persistent, recognizable differences in appearance and behavior, such as subtle face or harness details, preferred idle poses, movement rhythm, and reaction timing. Keep the Happy Ghast design recognizable and preserve synchronized pair and trio interactions.
+
+- [ ] **11. React to system activity.** Add lightweight, distinct reactions to useful events such as opening an app or playing music. Prefer Windows events or infrequent checks and keep monitoring off the render loop.
+
+## Milestone 4 — Performance and presentation
+
+- [ ] **12. Check resource use and privacy.** Stop sampling when the assistant panel closes, limit background work and memory use, and measure idle CPU and memory with the panel both closed and open. Confirm computer details remain local.
+
+- [ ] **13. Fix README GIF frame smearing.** Regenerate and inspect every README GIF, including pair and trio previews. Each frame should clear or dispose of the previous frame correctly and loop cleanly on GitHub.

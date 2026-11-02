@@ -38,6 +38,10 @@
     {
       "date": "2026-11-02",
       "summary": "Added repository instructions to log completed work and commit each task locally; created the project activity log."
+    },
+    {
+      "date": "2026-11-02",
+      "summary": "Reorganized the TODO into four ordered milestones with visible checkbox item numbers, from assistant foundations through features and pet polish."
     }
   ]
 }
