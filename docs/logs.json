@@ -54,6 +54,10 @@
     {
       "date": "2026-11-02",
       "summary": "Added persistent roster-slot variants with distinct harness and goggle accents, idle and wandering rhythms, and playful behavior weights; verified group routines and completed TODO 3."
+    },
+    {
+      "date": "2026-11-02",
+      "summary": "Fixed frame smearing in all 14 Happy Ghast preview GIFs by setting each frame to clear to the transparent background; verified README loops and completed TODO 5."
     }
   ]
 }

@@ -16,7 +16,7 @@ Work through the active milestones in order. Item numbers are written into each 
 
 ## Milestone 3 — Presentation
 
-- [ ] **5. Fix README GIF frame smearing.** Regenerate and inspect every README GIF, including pair and trio previews. Each frame should clear or dispose of the previous frame correctly and loop cleanly on GitHub.
+- [x] **5. Fix README GIF frame smearing.** Regenerate and inspect every README GIF, including pair and trio previews. Each frame should clear or dispose of the previous frame correctly and loop cleanly on GitHub.
 
 ## Deferred — Desktop assistant (lowest priority)
 
