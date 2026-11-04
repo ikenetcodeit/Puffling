@@ -9,6 +9,7 @@ public enum BehaviorKind
     Idle, Wander, Travel, Curious, Happy, Excited, Surprised, Dance, Affectionate,
     Follow, ComeHere, Drowsy, Sleeping, Waking, Returning, Dragged, Settling,
     PairPlay, TrioPlay, GroupChase, GroupSpar, GroupPong, Signature,
+    Grooving, Watching, Coding, AgentBusy,
 }
 
 /// <summary>

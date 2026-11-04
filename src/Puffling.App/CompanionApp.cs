@@ -70,6 +70,9 @@ public sealed class CompanionApp : NativeWindow, IDisposable
     private DateTimeOffset _lastMicrosoftFetch = DateTimeOffset.MinValue;
     private bool _microsoftFetching, _microsoftConnecting;
     private bool _microsoftErrorNotified;
+    private SystemActivity _systemActivity;
+    private double _lastActivityCheck;
+    private bool _activityChecking;
     private string? _activeBubble;
     private double _bubbleUntil;
     private readonly uint _taskbarCreated;
@@ -226,7 +229,39 @@ public sealed class CompanionApp : NativeWindow, IDisposable
             _settingsDirty = true;
         if (_settingsDirty && now - _lastSave > 2.0) Save();
         CheckMicrosoftReminders();
+        CheckSystemActivity(now);
     }
+
+    /// <summary>Polls, off the render loop, what the user is probably doing (listening to music,
+    /// watching a video, coding, or running a coding agent) and lets each companion's brain react.</summary>
+    private void CheckSystemActivity(double now)
+    {
+        if (_activityChecking || now - _lastActivityCheck < 5.0) return;
+        _activityChecking = true;
+        _lastActivityCheck = now;
+        _ = Task.Run(() =>
+        {
+            var activity = SystemActivityDetector.Detect();
+            QueueOnUi(() =>
+            {
+                _activityChecking = false;
+                if (activity == _systemActivity) return;
+                _systemActivity = activity;
+                foreach (var instance in _companions) instance.Pet.Brain.SystemActivity = activity;
+                string message = ActivityMessage(activity);
+                if (message.Length > 0) Say(message);
+            });
+        });
+    }
+
+    private static string ActivityMessage(SystemActivity a) => a switch
+    {
+        SystemActivity.Music => "Vibing to your music.",
+        SystemActivity.Movie => "Shh... movie time.",
+        SystemActivity.Coding => "In the zone, coding.",
+        SystemActivity.AgentRunning => "An agent is busy at work.",
+        _ => "",
+    };
 
     private void QueueOnUi(Action action)
     {

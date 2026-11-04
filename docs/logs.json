@@ -66,6 +66,10 @@
     {
       "date": "2026-11-04",
       "summary": "Rewrote AGENTS.md with project-specific build/test/preview commands and conventions, and replaced TODO.md with ROADMAP.md, adding a Later ideas section of proposed features."
+    },
+    {
+      "date": "2026-11-04",
+      "summary": "Added ambient reactions to detected music, video, coding, and coding-agent activity (Grooving/Watching/Coding/AgentBusy clips and Brain.SystemActivity), a pixelated-font notification bubble, and a roadmap milestone of further interaction and animation ideas; completed ROADMAP 4."
     }
   ]
 }

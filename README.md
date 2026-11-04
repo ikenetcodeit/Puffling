@@ -88,6 +88,8 @@ Puffling checks for updates every five minutes. The daily bubble lists up to thr
 | Drag and release | Dangles, follows, and settles after a gentle toss |
 | Click while it sleeps | Wakes up |
 
+Puffling also notices what you're up to on your PC and settles into a matching pose: a little groove when music is playing, a quiet "watching" pose for a movie or video, a focused coding pose when an IDE is open, and an alert, sparkly pose while a coding agent is running. A short pixel-font notification bubble announces each change.
+
 Settings let you choose its size, movement speed, animation intensity, activity level, and frame rate. You can also switch wandering and following on or off, keep it on top, start it with Windows, or let it hide during fullscreen apps. Preferences live in `%APPDATA%\Puffling\settings.json`.
 
 ## Small on purpose

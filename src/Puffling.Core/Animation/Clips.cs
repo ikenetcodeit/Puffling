@@ -44,6 +44,10 @@ public static class Clips
     public static readonly IClip Follow = new TravelClip(happy: true);
     public static readonly IClip Dragged = new DraggedClip();
     public static readonly IClip Settle = new SettleClip();
+    public static readonly IClip Grooving = new GroovingClip();
+    public static readonly IClip Watching = new WatchingClip();
+    public static readonly IClip Coding = new CodingClip();
+    public static readonly IClip AgentBusy = new AgentBusyClip();
     private static readonly IClip RedMove = new SignatureClip(CompanionVariant.Red);
     private static readonly IClip BlueMove = new SignatureClip(CompanionVariant.Blue);
     private static readonly IClip GreenMove = new SignatureClip(CompanionVariant.Green);
@@ -413,6 +417,85 @@ public static class Clips
             p.TentacleAmplitude = 0.35f; p.TentacleSpeed = 11f; p.TentacleSpread = 0.2f;
             p.BobAmplitude = 0f;            // glued to the cursor
             p.GoggleWiggle = -vx * 0.5f + 0.2f * MathF.Sin(t * 14f);
+            return p;
+        }
+    }
+
+    /// <summary>Ambient reaction while music is detected playing: a little head-bob sway.</summary>
+    private sealed class GroovingClip : IClip
+    {
+        public string Name => "Grooving";
+        public float? Duration => 3.2f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            float beat = t * 3.4f;
+            p.Expression = Expression.Happy;
+            p.OffsetY = -2.5f * Hop(beat, 1f);
+            p.Roll = 0.14f * MathF.Sin(beat * MathF.PI);
+            p.Yaw = 0.10f * MathF.Sin(beat * MathF.PI * 0.5f);
+            p.TentacleSway = 0.3f * MathF.Sin(beat * MathF.PI);
+            p.TentacleAmplitude = 0.3f; p.TentacleSpeed = 5f;
+            p.GoggleWiggle = 0.25f * MathF.Sin(beat * MathF.PI * 2f);
+            p.Particles = ParticleKind.Notes;
+            return p;
+        }
+    }
+
+    /// <summary>Ambient reaction while a video/movie is detected: settled, eyes fixed ahead.</summary>
+    private sealed class WatchingClip : IClip
+    {
+        public string Name => "Watching";
+        public float? Duration => 4.0f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            p.Expression = Expression.Curious;
+            p.Pitch = 0.05f;
+            p.LookY = 0.1f;
+            p.TentacleAmplitude = 0.08f; p.TentacleSpeed = 1.2f; p.TentacleSpread = -0.05f;
+            p.BobAmplitude = 0.6f; p.BobSpeed = 1f;
+            p.GoggleWiggle = 0.1f * MathF.Sin(t * 0.8f);
+            return p;
+        }
+    }
+
+    /// <summary>Ambient reaction while a code editor/IDE is detected: a quiet, focused pose with a
+    /// faint typing twitch.</summary>
+    private sealed class CodingClip : IClip
+    {
+        public string Name => "Coding";
+        public float? Duration => 4.0f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            p.Expression = Expression.Curious;
+            p.Pitch = 0.12f;
+            p.LookY = 0.25f;
+            p.OffsetX = 0.6f * MathF.Sin(t * 14f);
+            p.TentacleAmplitude = 0.10f; p.TentacleSpeed = 2f; p.TentacleSpread = 0.02f;
+            p.GoggleWiggle = 0.08f * MathF.Sin(t * 3f);
+            return p;
+        }
+    }
+
+    /// <summary>Ambient reaction while a coding agent process is detected running: alert and
+    /// sparkly, watching the screen do the work.</summary>
+    private sealed class AgentBusyClip : IClip
+    {
+        public string Name => "Agent at work";
+        public float? Duration => 3.0f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            p.Expression = Expression.Excited;
+            p.OffsetY = -3f * Hop(t, 9f);
+            p.Roll = 0.1f * MathF.Sin(t * 9f);
+            p.Pitch = -0.06f;
+            p.LookY = -0.3f;
+            p.TentacleAmplitude = 0.4f; p.TentacleSpeed = 9f; p.TentacleSpread = 0.3f;
+            p.GoggleWiggle = 0.35f * MathF.Sin(t * 10f);
+            p.Particles = ParticleKind.Sparkles;
             return p;
         }
     }

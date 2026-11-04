@@ -42,6 +42,32 @@ public sealed class Brain
     public Vector2? LookOverride;
     public Behavior Current { get; private set; }
 
+    private SystemActivity _systemActivity;
+    /// <summary>What the host app thinks the user is doing right now (set by the App, polled
+    /// off the render loop). Changing it reacts immediately if the character is free to be
+    /// interrupted, and otherwise biases the next few idle choices.</summary>
+    public SystemActivity SystemActivity
+    {
+        get => _systemActivity;
+        set
+        {
+            if (_systemActivity == value) return;
+            _systemActivity = value;
+            if (value != SystemActivity.None && Current.Interruptible &&
+                Current.Kind is BehaviorKind.Idle or BehaviorKind.Wander or BehaviorKind.Curious)
+                Interrupt(Create(ActivityBehaviorKind(value)));
+        }
+    }
+
+    private static BehaviorKind ActivityBehaviorKind(SystemActivity a) => a switch
+    {
+        SystemActivity.Music => BehaviorKind.Grooving,
+        SystemActivity.Movie => BehaviorKind.Watching,
+        SystemActivity.Coding => BehaviorKind.Coding,
+        SystemActivity.AgentRunning => BehaviorKind.AgentBusy,
+        _ => BehaviorKind.Idle,
+    };
+
     /// <summary>Raised when the brain changes a persisted setting itself (e.g. waking leaves sleep mode).</summary>
     public event Action? SettingsMutated;
     public event Action<BehaviorKind>? BehaviorChanged;
@@ -57,6 +83,8 @@ public sealed class Brain
         [BehaviorKind.Curious] = 6, [BehaviorKind.Excited] = 40, [BehaviorKind.Dance] = 120,
         [BehaviorKind.Follow] = 60, [BehaviorKind.Surprised] = 30,
         [BehaviorKind.Signature] = 28,
+        [BehaviorKind.Grooving] = 18, [BehaviorKind.Watching] = 22,
+        [BehaviorKind.Coding] = 18, [BehaviorKind.AgentBusy] = 12,
     };
 
     public Brain(Motion motion, Animator animator, ScreenGeometry geometry, CompanionSettings settings, Random rng,
@@ -184,6 +212,10 @@ public sealed class Brain
             (BehaviorKind.Dance, 0.15f * f * Variant.Playfulness() * (busy ? 0.3f : 1f)),
             (BehaviorKind.Signature, 0.22f * f * Variant.Playfulness() * (busy ? 0.4f : 1f)),
             (BehaviorKind.Follow, CanMove && !Settings.FollowCursor ? 0.35f * f : 0f),
+            (BehaviorKind.Grooving, SystemActivity == SystemActivity.Music ? 1.0f * f : 0f),
+            (BehaviorKind.Watching, SystemActivity == SystemActivity.Movie ? 1.0f * f : 0f),
+            (BehaviorKind.Coding, SystemActivity == SystemActivity.Coding ? 0.9f * f : 0f),
+            (BehaviorKind.AgentBusy, SystemActivity == SystemActivity.AgentRunning ? 1.3f * f : 0f),
         };
 
         float total = 0;
@@ -224,6 +256,10 @@ public sealed class Brain
         BehaviorKind.Returning => new ReturningBehavior(),
         BehaviorKind.Settling => new ClipBehavior(k, Clips.Settle, 0.1f),
         BehaviorKind.Dragged => new DraggedBehavior(),
+        BehaviorKind.Grooving => new ClipBehavior(k, Clips.Grooving, 0.3f),
+        BehaviorKind.Watching => new ClipBehavior(k, Clips.Watching, 0.4f),
+        BehaviorKind.Coding => new ClipBehavior(k, Clips.Coding, 0.4f),
+        BehaviorKind.AgentBusy => new ClipBehavior(k, Clips.AgentBusy, 0.25f),
         _ => new IdleBehavior(),
     };
 

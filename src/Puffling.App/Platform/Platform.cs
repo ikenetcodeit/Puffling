@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using System.Numerics;
 using Microsoft.Win32;
 using Puffling.App.Native;
+using Puffling.Core.Behavior;
 using Puffling.Core.Movement;
 using static Puffling.App.Native.Win32;
 
@@ -107,6 +109,55 @@ public static class FullscreenDetector
 
     public static bool AffectsPoint(RectI? fs, Vector2 p) =>
         fs is { } r && (r.Width == 0 || r.Contains(p));
+}
+
+/// <summary>
+/// Infers what the user is probably doing right now from running process names and the
+/// foreground window title, so Puffling can react. Deliberately a coarse, best-effort heuristic:
+/// an unrecognized app simply yields <see cref="SystemActivity.None"/> rather than a wrong guess.
+/// Reads only process/window names, never file contents or network activity.
+/// </summary>
+public static class SystemActivityDetector
+{
+    private static readonly HashSet<string> AgentProcesses = new(StringComparer.OrdinalIgnoreCase)
+        { "claude", "codex", "aider", "ollama" };
+    private static readonly HashSet<string> CodingProcesses = new(StringComparer.OrdinalIgnoreCase)
+        { "devenv", "code", "cursor", "rider64", "idea64", "pycharm64", "webstorm64", "clion64",
+          "sublime_text", "notepad++" };
+    private static readonly HashSet<string> MusicProcesses = new(StringComparer.OrdinalIgnoreCase)
+        { "spotify", "wmplayer", "itunes", "foobar2000", "musicbee", "groove" };
+    private static readonly HashSet<string> MovieProcesses = new(StringComparer.OrdinalIgnoreCase)
+        { "vlc", "mpc-hc64", "mpc-hc", "mpv", "potplayer64", "potplayer", "mpc-be64" };
+    private static readonly string[] MovieTitleHints =
+        { "youtube", "netflix", "twitch", "prime video", "disney+", "- vlc media player" };
+
+    public static SystemActivity Detect()
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var process in Process.GetProcesses())
+            using (process) names.Add(process.ProcessName);
+
+        // Priority: an agent actively working, then focused coding, then watching, then listening —
+        // roughly most specific/noteworthy to most ambient.
+        if (names.Overlaps(AgentProcesses)) return SystemActivity.AgentRunning;
+        if (names.Overlaps(CodingProcesses)) return SystemActivity.Coding;
+
+        string title = ForegroundTitle();
+        if (names.Overlaps(MovieProcesses) || Array.Exists(MovieTitleHints,
+                h => title.Contains(h, StringComparison.OrdinalIgnoreCase)))
+            return SystemActivity.Movie;
+        if (names.Overlaps(MusicProcesses)) return SystemActivity.Music;
+        return SystemActivity.None;
+    }
+
+    private static string ForegroundTitle()
+    {
+        IntPtr fg = GetForegroundWindow();
+        if (fg == IntPtr.Zero) return "";
+        var sb = new System.Text.StringBuilder(256);
+        GetWindowTextW(fg, sb, sb.Capacity);
+        return sb.ToString();
+    }
 }
 
 /// <summary>"Start with Windows" via the per-user Run key (no admin rights, no scheduled task).</summary>

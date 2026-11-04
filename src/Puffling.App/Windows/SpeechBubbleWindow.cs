@@ -27,7 +27,9 @@ public sealed class SpeechBubbleWindow : NativeWindow, IDisposable
             WS_POPUP, 0, 0, _width, _height, owner);
         IntPtr region = CreateRoundRectRgn(0, 0, _width, _height, 18 * (int)dpi / 96, 18 * (int)dpi / 96);
         if (!SetWindowRgn(Handle, region, true)) DeleteObject(region);
-        _font = CreateFontW(-(10 * (int)dpi / 72), 0, 0, 0, 500, 0, 0, 0, 1, 0, 0, 5, 0, "Segoe UI");
+        // Windows' built-in bitmap "Terminal" font, drawn without antialiasing (quality 3 =
+        // NONANTIALIASED_QUALITY, charset 255 = OEM_CHARSET) for a pixelated notification look.
+        _font = CreateFontW(-(12 * (int)dpi / 72), 0, 0, 0, 400, 0, 0, 0, 255, 0, 0, 3, 1, "Terminal");
         int pad = 16 * (int)dpi / 96;
         _label = CreateWindowExW(0, "STATIC", "", WS_CHILD | WS_VISIBLE | SS_LEFT,
             pad, pad, _width - 2 * pad, _height - 2 * pad, Handle, IntPtr.Zero, Instance, IntPtr.Zero);

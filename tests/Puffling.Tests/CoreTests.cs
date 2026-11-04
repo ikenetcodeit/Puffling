@@ -20,6 +20,7 @@ public static class RenderingTests
         Clips.Signature(Puffling.Core.Character.CompanionVariant.Green),
         Clips.GroupGame(GroupGameKind.Chase, 0), Clips.GroupGame(GroupGameKind.Spar, 1),
         Clips.GroupGame(GroupGameKind.Pong, 2),
+        Clips.Grooving, Clips.Watching, Clips.Coding, Clips.AgentBusy,
     };
 
     [Test]
@@ -347,6 +348,36 @@ public static class BehaviorTests
         c.UpdateGeometry(ScreenGeometry.Single(1920, 1080));
         Assert.True(c.Geometry.IsComfortablyVisible(c.Position, c.Brain.Margin), "restored onto the remaining monitor");
         Assert.Equal(48, c.CanvasSize, "canvas re-derived from the new monitor's DPI");
+    }
+
+    [Test]
+    public static void SystemActivity_ReactsImmediatelyWhenIdle_AndClearsBackToIdle()
+    {
+        var c = new Companion(new CompanionSettings(), ScreenGeometry.Single(1920, 1080), seed: 7);
+        Run(c, 9f, new(5, 5), 0); // settle into Idle
+        Assert.Equal(BehaviorKind.Idle, c.CurrentBehavior, "idle before reacting");
+
+        c.Brain.SystemActivity = SystemActivity.AgentRunning;
+        Assert.Equal(BehaviorKind.AgentBusy, c.CurrentBehavior, "reacts right away while free to be interrupted");
+
+        c.Brain.SystemActivity = SystemActivity.None;
+        Run(c, 10f, new(5, 5), 0);
+        Assert.True(c.CurrentBehavior != BehaviorKind.AgentBusy, "stops once the activity clears");
+    }
+
+    [Test]
+    public static void SystemActivity_DoesNotInterruptUserDrivenBehavior()
+    {
+        var c = new Companion(new CompanionSettings(), ScreenGeometry.Single(1920, 1080), seed: 8);
+        var start = c.Position;
+        c.Pointer.PointerDown(start, 0);
+        var moved = start + new Vector2(40, 0);
+        c.Pointer.PointerMove(moved, 0.05);
+        c.Tick(1 / 30f, new(moved, 0));
+        Assert.Equal(BehaviorKind.Dragged, c.CurrentBehavior, "dragging before setting activity");
+
+        c.Brain.SystemActivity = SystemActivity.Coding;
+        Assert.Equal(BehaviorKind.Dragged, c.CurrentBehavior, "an uninterruptible/user behavior keeps going");
     }
 
     [Test]
