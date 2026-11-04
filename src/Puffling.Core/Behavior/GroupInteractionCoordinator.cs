@@ -30,10 +30,6 @@ public sealed class GroupInteractionCoordinator
 
     public GroupInteractionCoordinator(int? seed = null) => _rng = seed is { } s ? new Random(s) : new Random();
 
-    private static bool IsGroupBehavior(BehaviorKind kind) => kind is
-        BehaviorKind.PairPlay or BehaviorKind.TrioPlay or BehaviorKind.GroupChase or
-        BehaviorKind.GroupSpar or BehaviorKind.GroupPong or BehaviorKind.GroupStare;
-
     public void Tick(double now, IReadOnlyList<Companion> companions)
     {
         if (companions.Count != _lastCount)
@@ -48,7 +44,7 @@ public sealed class GroupInteractionCoordinator
 
         if (_active.Count > 0)
         {
-            if (_active.Any(p => !companions.Contains(p) || !IsGroupBehavior(p.CurrentBehavior)))
+            if (_active.Any(p => !companions.Contains(p) || !p.CurrentBehavior.IsGroupPlay()))
                 Cancel();
             else
                 return;
@@ -170,7 +166,7 @@ public sealed class GroupInteractionCoordinator
     private void Cancel()
     {
         foreach (var p in _active)
-            if (IsGroupBehavior(p.CurrentBehavior))
+            if (p.CurrentBehavior.IsGroupPlay())
                 p.Brain.Interrupt(new IdleBehavior());
         _active.Clear();
     }

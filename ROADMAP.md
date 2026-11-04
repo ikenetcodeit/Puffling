@@ -40,6 +40,15 @@ reprioritized.
   (`BehaviorKind.Searching`); it never fires with company around
   (`Brain.CompanionsPresent`). See `GroupInteractionCoordinator`.
 
+- [x] **35. Give companions a billiard-ball collision.** Pufflings no longer overlap: every frame,
+  `Puffling.Core.Movement.CompanionCollision` pushes any overlapping pair apart and exchanges the
+  along-normal component of their velocity (equal-mass elastic collision), so flicking one into
+  another gives it a satisfying shove rather than passing through it. A pet being actively dragged
+  is never repositioned by a collision (it stays glued to the cursor) but still shoves whatever it
+  hits, using the drag gesture's real velocity rather than its frozen `Motion.Velocity`.
+  Choreographed group routines (dance/chase/spar/pong/staring contest) are skipped since those
+  already hold pets at deliberate close offsets.
+
 ## Milestone 3 — Presentation
 
 - [x] **5. Fix README GIF frame smearing.** Every README GIF, including pair and trio previews,

@@ -231,6 +231,82 @@ public static class MovementTests
     }
 }
 
+public static class CompanionCollisionTests
+{
+    private static Companion MakePet(ScreenGeometry g, Vector2 pos, int seed) =>
+        new(new CompanionSettings { LastX = pos.X, LastY = pos.Y, AutonomousMovement = false }, g, seed);
+
+    [Test]
+    public static void Overlapping_Companions_ArePushedApart()
+    {
+        var g = ScreenGeometry.Single(1920, 1080);
+        var a = MakePet(g, new(900, 500), 1);
+        var b = MakePet(g, new(915, 500), 2); // well inside each other's icon radius
+        float minDist = (a.CanvasSize + b.CanvasSize) * 0.32f;
+
+        for (int i = 0; i < 10; i++) CompanionCollision.Resolve(new[] { a, b });
+
+        Assert.True(Vector2.Distance(a.Position, b.Position) >= minDist - 0.5f,
+            $"should no longer overlap: {Vector2.Distance(a.Position, b.Position)} < {minDist}");
+    }
+
+    [Test]
+    public static void FlickedCompanion_BouncesOffAStationaryOne_LikeBilliards()
+    {
+        var g = ScreenGeometry.Single(1920, 1080);
+        var moving = MakePet(g, new(700, 500), 3);
+        var still = MakePet(g, new(760, 500), 4);
+        moving.Motion.Velocity = new Vector2(400, 0); // flicked straight at `still`
+
+        bool bounced = false;
+        for (int i = 0; i < 120 && !bounced; i++)
+        {
+            moving.Motion.Update(1 / 60f);
+            CompanionCollision.Resolve(new[] { moving, still });
+            if (still.Motion.Velocity.X > 10f) bounced = true;
+        }
+        Assert.True(bounced, "a stationary companion picks up velocity when struck");
+        Assert.True(moving.Motion.Velocity.X < 400f, "the mover loses speed to the one it struck");
+    }
+
+    [Test]
+    public static void DraggedCompanion_IsNeverMoved_ButStillShovesWhatItHits()
+    {
+        var g = ScreenGeometry.Single(1920, 1080);
+        var dragged = MakePet(g, new(900, 500), 5);
+        var other = MakePet(g, new(915, 500), 6);
+        dragged.Pointer.PointerDown(dragged.Position, 0);
+        dragged.Pointer.PointerMove(dragged.Position + new Vector2(30, 0), 0.05);
+        dragged.Tick(1 / 60f, new FrameInputs(dragged.Position + new Vector2(30, 0), 0));
+        Assert.Equal(BehaviorKind.Dragged, dragged.CurrentBehavior, "set up as dragged");
+        var pinnedPos = dragged.Position;
+
+        CompanionCollision.Resolve(new[] { dragged, other });
+
+        Assert.Equal(pinnedPos, dragged.Position, "a dragged pet is glued to the cursor, never repositioned");
+        float minDist = (dragged.CanvasSize + other.CanvasSize) * 0.32f;
+        Assert.True(Vector2.Distance(dragged.Position, other.Position) >= minDist - 0.5f,
+            "the other pet gets pushed clear instead");
+    }
+
+    [Test]
+    public static void GroupPlay_IsNeverDisturbedByCollision()
+    {
+        var g = ScreenGeometry.Single(1920, 1080);
+        var a = MakePet(g, new(900, 500), 7);
+        var b = MakePet(g, new(905, 500), 8); // deliberately overlapping
+        a.Brain.Interrupt(new GroupPlayBehavior(new(900, 500), 0, 2, 52f));
+        b.Brain.Interrupt(new GroupPlayBehavior(new(900, 500), 1, 2, 52f));
+        var posA = a.Position;
+        var posB = b.Position;
+
+        CompanionCollision.Resolve(new[] { a, b });
+
+        Assert.Equal(posA, a.Position, "choreographed routines are left alone");
+        Assert.Equal(posB, b.Position, "choreographed routines are left alone");
+    }
+}
+
 public static class SettingsTests
 {
     [Test]

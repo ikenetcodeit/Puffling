@@ -12,6 +12,16 @@ public enum BehaviorKind
     Grooving, Watching, Coding, AgentBusy, Searching,
 }
 
+public static class BehaviorKinds
+{
+    /// <summary>A synchronized, choreographed routine (dance/chase/spar/pong/staring contest)
+    /// where pets are deliberately kept at specific close offsets — collision pushing must leave
+    /// these alone or it would fight the choreography.</summary>
+    public static bool IsGroupPlay(this BehaviorKind kind) => kind is
+        BehaviorKind.PairPlay or BehaviorKind.TrioPlay or BehaviorKind.GroupChase or
+        BehaviorKind.GroupSpar or BehaviorKind.GroupPong or BehaviorKind.GroupStare;
+}
+
 /// <summary>
 /// One state of the behaviour state machine. A behaviour owns BOTH what the character does
 /// (motion) and how it looks (clip), so movement and animation can never disagree — e.g. there
