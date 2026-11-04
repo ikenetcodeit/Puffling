@@ -191,7 +191,8 @@ public sealed class CompanionApp : NativeWindow, IDisposable
     {
         _lastHousekeeping = now;
 
-        var fullscreen = _settings.HideInFullscreen ? FullscreenDetector.Detect() : default;
+        // Always detected (not gated by HideInFullscreen) since video-watching mode also needs it.
+        var fullscreen = FullscreenDetector.Detect();
         bool fullscreenChanged = false;
         foreach (var instance in _companions)
         {
@@ -236,6 +237,30 @@ public sealed class CompanionApp : NativeWindow, IDisposable
         if (_settingsDirty && now - _lastSave > 2.0) Save();
         CheckMicrosoftReminders();
         CheckSystemActivity(now);
+        UpdateVideoViewport(fullscreen);
+    }
+
+    /// <summary>Tells each companion's brain about a detected video region: the whole monitor when
+    /// a video is fullscreen (so interested companions can gather on another display and face it),
+    /// or the playing window's bounds otherwise (so wandering steers clear of it). Null when no
+    /// video activity is detected.</summary>
+    private void UpdateVideoViewport(RectI? fullscreen)
+    {
+        VideoViewport? video = null;
+        if (_systemActivity == SystemActivity.Movie)
+        {
+            if (fullscreen is { Width: > 0 } fs)
+                video = new VideoViewport(fs, Fullscreen: true);
+            else if (fullscreen is null)
+            {
+                IntPtr fg = GetForegroundWindow();
+                if (fg != IntPtr.Zero && GetWindowRect(fg, out var wr))
+                    video = new VideoViewport(new RectI(wr.Left, wr.Top, wr.Right, wr.Bottom), Fullscreen: false);
+            }
+            // fullscreen with Width == 0 is the "D3D/presentation mode, unknown monitor" sentinel:
+            // we can't tell which monitor to avoid, so skip video-specific behavior entirely.
+        }
+        foreach (var instance in _companions) instance.Pet.Brain.Video = video;
     }
 
     /// <summary>Polls, off the render loop, what the user is probably doing (listening to music,

@@ -73,6 +73,45 @@ public sealed class Brain
     /// company around.</summary>
     public int CompanionsPresent { get; set; } = 1;
 
+    private VideoViewport? _video;
+    /// <summary>A detected video region, set by the host app. Changing from "no fullscreen video"
+    /// to "fullscreen video" rolls a per-variant interest check and, on success, starts
+    /// <see cref="WatchingMovieBehavior"/>; clearing it (or it becoming non-fullscreen) ends that
+    /// behavior. Not every companion joins — Blue is most drawn to it, Green least.</summary>
+    public VideoViewport? Video
+    {
+        get => _video;
+        set
+        {
+            if (_video.Equals(value)) return;
+            bool wasFullscreen = _video is { Fullscreen: true };
+            _video = value;
+            if (value is { Fullscreen: true } && !wasFullscreen)
+            {
+                double interest = Variant switch { CompanionVariant.Blue => 0.8, CompanionVariant.Red => 0.5, _ => 0.2 };
+                if (Rng.NextDouble() < interest && Current.Interruptible &&
+                    Current.Kind is BehaviorKind.Idle or BehaviorKind.Wander or BehaviorKind.Curious)
+                    Interrupt(new WatchingMovieBehavior());
+            }
+            else if (value is not { Fullscreen: true } && Current.Kind == BehaviorKind.WatchingMovie)
+                Interrupt(new IdleBehavior());
+        }
+    }
+
+    /// <summary>Nudges a candidate movement target outside a non-fullscreen video's window bounds,
+    /// so wandering/travel never cross into it. A no-op when there's no windowed video.</summary>
+    public Vector2 AvoidVideo(Vector2 p)
+    {
+        if (Video is not { Fullscreen: false } v || !v.Bounds.Contains(p)) return p;
+        float dl = p.X - v.Bounds.Left, dr = v.Bounds.Right - p.X, dt = p.Y - v.Bounds.Top, db = v.Bounds.Bottom - p.Y;
+        float min = MathF.Min(MathF.Min(dl, dr), MathF.Min(dt, db));
+        Vector2 pushed = min == dl ? new Vector2(v.Bounds.Left - 8, p.Y)
+            : min == dr ? new Vector2(v.Bounds.Right + 8, p.Y)
+            : min == dt ? new Vector2(p.X, v.Bounds.Top - 8)
+            : new Vector2(p.X, v.Bounds.Bottom + 8);
+        return Geometry.NearestSafePoint(pushed, Margin);
+    }
+
     /// <summary>Raised when the brain changes a persisted setting itself (e.g. waking leaves sleep mode).</summary>
     public event Action? SettingsMutated;
     public event Action<BehaviorKind>? BehaviorChanged;
@@ -106,7 +145,11 @@ public sealed class Brain
     /// <summary>Autonomous movement allowed? (User-initiated moves ignore this.)</summary>
     public bool CanMove => Settings.AutonomousMovement && !Settings.FreezePosition;
     public bool UserBusy => UserIdleSeconds < 3f;
-    public float Speed(float logicalPerSecond) => logicalPerSecond * DpiScale * Settings.MovementSpeed * (UserBusy ? 0.8f : 1f);
+    public float Speed(float logicalPerSecond) =>
+        logicalPerSecond * DpiScale * Settings.MovementSpeed * (UserBusy ? 0.8f : 1f) * VideoSlowdown();
+
+    /// <summary>Quieter movement while standing inside a non-fullscreen video's window bounds.</summary>
+    private float VideoSlowdown() => Video is { Fullscreen: false } v && v.Bounds.Contains(Motion.Position) ? 0.45f : 1f;
     public float CursorDistanceLogical => Vector2.Distance(Cursor, Motion.Position) / DpiScale;
     public float RandomRange(float a, float b) => a + (float)Rng.NextDouble() * (b - a);
     public void QueueNext(BehaviorKind k) => _queued = k;
@@ -144,7 +187,10 @@ public sealed class Brain
     private void EvaluateContext()
     {
         var k = Current.Kind;
-        if (k is BehaviorKind.Dragged or BehaviorKind.Returning or BehaviorKind.Settling) return;
+        // WatchingMovie deliberately crosses monitors itself (path-validated); the generic
+        // off-screen safety net would otherwise hand it to ReturningBehavior mid-transit and
+        // undo the move right where two monitors' deflated safe areas touch.
+        if (k is BehaviorKind.Dragged or BehaviorKind.Returning or BehaviorKind.Settling or BehaviorKind.WatchingMovie) return;
 
         if (!Geometry.IsComfortablyVisible(Motion.Position, Margin)) { Interrupt(new ReturningBehavior()); return; }
         if (!Current.Interruptible) return;
@@ -269,6 +315,7 @@ public sealed class Brain
         BehaviorKind.AgentBusy => new ClipBehavior(k, Clips.AgentBusy, 0.25f),
         BehaviorKind.Searching => new ClipBehavior(k, Clips.Searching, 0.4f),
         BehaviorKind.Declined => new ClipBehavior(k, Clips.Declined, 0.3f),
+        BehaviorKind.WatchingMovie => new WatchingMovieBehavior(),
         _ => new IdleBehavior(),
     };
 

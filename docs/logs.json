@@ -106,6 +106,10 @@
     {
       "date": "2026-11-04",
       "summary": "Adopted a user-provided personality/social/system-awareness design spec into the roadmap as Milestone 6, mapping its architecture onto existing code and listing what's done versus open. Implemented one of its mechanics: Green now sometimes declines Red's invitation to a duo (BehaviorKind.Declined), leaving Green uninterrupted. Completed ROADMAP 37."
+    },
+    {
+      "date": "2026-11-04",
+      "summary": "Added video-watching mode (WatchingMovieBehavior/Brain.Video): on fullscreen video, an interested companion (weighted by personality) relocates to another monitor and faces back toward it; windowed video slows nearby movement and keeps Wander/Travel targets outside its bounds. Fixed a real bug along the way: ScreenEdgeCollision and the generic off-screen safety net were both reflexively undoing any deliberate cross-monitor move at a touching monitor seam; both now exempt WatchingMovie. Completed ROADMAP 38."
     }
   ]
 }

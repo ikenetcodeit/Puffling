@@ -173,16 +173,22 @@ gated to exactly one companion present; music/video/coding/agent ambient reactio
 notifications. Eligibility already excludes paused/asleep/cross-monitor/mid-activity pets
 (`AllEligible`).
 
-**Not yet implemented** — pull into active work individually rather than all at once:
+- [x] **38. Video-watching mode: gather and face the screen.** On a multi-monitor rig with
+  fullscreen video detected, an interested companion (Blue most, Red sometimes, Green rarely —
+  `Brain.Video`) relocates to a different monitor and faces back toward the video the whole time,
+  instead of only sitting in an ambient pose on top of it; single-monitor fullscreen video is
+  covered by the existing generic fullscreen-hide (`FullscreenDetector`/`HideInFullscreen`), so no
+  separate handling was needed there. For *windowed* video, movement is quieter near the window
+  (`Brain.Speed`'s `VideoSlowdown`) and `Wander`/`Travel` targets are nudged outside its bounds
+  (`Brain.AvoidVideo`) so companions never cross into it; uninvolved companions carry on normally.
+  See `WatchingMovieBehavior` and `CompanionApp.UpdateVideoViewport`. Not included: a popcorn
+  prop (new sprite art, left for later) and distinguishing "D3D fullscreen, unknown monitor"
+  video from other fullscreen apps (falls back to the generic hide/ambient-pose behavior).
+  Fixing this also surfaced and fixed a real bug: `ScreenEdgeCollision`'s bounce-back (item 36)
+  and the general off-screen safety net (`EvaluateContext`) were both fighting any deliberate
+  cross-monitor move at the exact seam where two monitors' margin-deflated safe areas touch —
+  both now exempt `WatchingMovie`, which validates its own path with `Geometry.PathIsVisible`.
 
-- [ ] **38. Video-watching mode: gather and face the screen.** The current `Watching` ambient
-  pose (item 4) doesn't yet implement the spec's fuller behavior: on a multi-monitor setup with
-  fullscreen video detected, move interested Pufflings to a secondary monitor facing the video
-  display (optionally with a tiny popcorn prop); on single-monitor fullscreen video, hide/suspend
-  visible Pufflings instead (reuse `FullscreenDetector`); for *windowed* video, reduce movement
-  speed/intensity and keep companions from crossing the video window's bounds, while uninvolved
-  Pufflings carry on independently. Should take priority over wandering/social routines whenever
-  it would otherwise obstruct playback.
 - [ ] **39. Distinguish AI-agent lifecycle states.** `AgentBusy` is currently a single ambient
   pose for "some agent process is running." Expand `SystemActivity.AgentRunning` into distinct
   idle/running/waiting-for-input/succeeded/failed signals wherever a reliable integration exists

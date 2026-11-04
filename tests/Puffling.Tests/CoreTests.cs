@@ -2,6 +2,7 @@ using System.Numerics;
 using Puffling.Core;
 using Puffling.Core.Animation;
 using Puffling.Core.Behavior;
+using Puffling.Core.Character;
 using Puffling.Core.Interaction;
 using Puffling.Core.Movement;
 using Puffling.Core.Rendering;
@@ -561,6 +562,68 @@ public static class BehaviorTests
             Assert.True(seen.Contains(k), $"never exhibited {k} in two hours");
         for (int i = 1; i < autonomousDanceStarts.Count; i++)
             Assert.True(autonomousDanceStarts[i] - autonomousDanceStarts[i - 1] >= 119.9, "autonomous dance cooldown violated");
+    }
+}
+
+public static class VideoWatchingTests
+{
+    private static Companion MakePet(ScreenGeometry g, CompanionVariant variant, int seed, float? x = null, float? y = null) =>
+        new(new CompanionSettings { LastX = x, LastY = y }, g, seed, variant);
+
+    [Test]
+    public static void InterestedCompanion_LeavesTheVideoMonitor_AndFacesBackTowardIt()
+    {
+        var g = BehaviorTests.ThreeMonitors(); // left/main/right
+        var blue = MakePet(g, CompanionVariant.Blue, seed: 30, x: 900, y: 500); // starts on "main"
+        var mainMonitor = g.MonitorAt(blue.Position);
+
+        blue.Brain.Video = new VideoViewport(mainMonitor.Bounds, Fullscreen: true);
+        Assert.Equal(BehaviorKind.WatchingMovie, blue.CurrentBehavior, "a highly-interested companion joins right away");
+
+        for (int i = 0; i < 30 * 90; i++) blue.Tick(1 / 30f, new FrameInputs(new Vector2(-9000, -9000), 20));
+        Assert.True(g.MonitorAt(blue.Position).Id != mainMonitor.Id, "relocated off the video's monitor");
+        Assert.Equal(BehaviorKind.WatchingMovie, blue.CurrentBehavior, "still watching");
+
+        blue.Brain.Video = null;
+        blue.Tick(1 / 30f, new FrameInputs(new Vector2(-9000, -9000), 20));
+        Assert.True(blue.CurrentBehavior != BehaviorKind.WatchingMovie, "stops watching once the video ends");
+    }
+
+    [Test]
+    public static void Green_IsLeastInterested_AndDoesNotAlwaysJoin()
+    {
+        var g = ScreenGeometry.Single(1920, 1080);
+        int joined = 0;
+        const int trials = 30;
+        for (int i = 0; i < trials; i++)
+        {
+            var green = MakePet(g, CompanionVariant.Green, seed: 1000 + i);
+            green.Brain.Video = new VideoViewport(g.Primary.Bounds, Fullscreen: true);
+            if (green.CurrentBehavior == BehaviorKind.WatchingMovie) joined++;
+        }
+        Assert.True(joined > 0, "joining is still possible sometimes");
+        Assert.True(joined < trials, "green (low interest) doesn't always join, unlike blue");
+    }
+
+    [Test]
+    public static void WindowedVideo_IsNeverCrossedByWandering_AndSlowsNearbyMovement()
+    {
+        var g = ScreenGeometry.Single(1920, 1080);
+        var c = MakePet(g, CompanionVariant.Red, seed: 32, x: 200, y: 500);
+        var videoWindow = new RectI(700, 300, 1300, 800); // squarely in the middle of the desktop
+        c.Brain.Video = new VideoViewport(videoWindow, Fullscreen: false);
+
+        for (int i = 0; i < 30 * 60; i++)
+        {
+            c.Tick(1 / 30f, new FrameInputs(new Vector2(-9000, -9000), 20));
+            Assert.True(!videoWindow.Contains(c.Position), $"must never enter the video window, at {c.Position}");
+        }
+
+        c.Motion.Teleport(new Vector2(1000, 550)); // force it inside, as if the window just appeared there
+        float slow = c.Brain.Speed(100);
+        c.Brain.Video = null;
+        float normal = c.Brain.Speed(100);
+        Assert.True(slow < normal, "movement is quieter while standing inside a windowed video's bounds");
     }
 }
 

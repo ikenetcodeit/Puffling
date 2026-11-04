@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Numerics;
 using Puffling.Core.Animation;
 using Puffling.Core.Character;
@@ -9,7 +10,7 @@ public enum BehaviorKind
     Idle, Wander, Travel, Curious, Happy, Excited, Surprised, Dance, Affectionate,
     Follow, ComeHere, Drowsy, Sleeping, Waking, Returning, Dragged, Settling,
     PairPlay, TrioPlay, GroupChase, GroupSpar, GroupPong, GroupStare, Signature,
-    Grooving, Watching, Coding, AgentBusy, Searching, Declined,
+    Grooving, Watching, Coding, AgentBusy, Searching, Declined, WatchingMovie,
 }
 
 public static class BehaviorKinds
@@ -74,7 +75,7 @@ public sealed class WanderBehavior : Behavior
     public override BehaviorKind Kind => BehaviorKind.Wander;
     public override void Enter(Brain b)
     {
-        var p = b.Geometry.RandomPointNear(b.Motion.Position, 40 * b.DpiScale, 170 * b.DpiScale, b.Margin, b.Rng);
+        var p = b.AvoidVideo(b.Geometry.RandomPointNear(b.Motion.Position, 40 * b.DpiScale, 170 * b.DpiScale, b.Margin, b.Rng));
         b.Motion.MoveTo(p, b.Speed(42) * b.Variant.WanderSpeed(), b.Speed(55));
         b.Animator.Play(Clips.Travel, 0.6f);
     }
@@ -86,7 +87,7 @@ public sealed class TravelBehavior : Behavior
     public override BehaviorKind Kind => BehaviorKind.Travel;
     public override void Enter(Brain b)
     {
-        var p = b.Geometry.RandomFarPoint(b.Motion.Position, 320 * b.DpiScale, b.Margin, b.Rng);
+        var p = b.AvoidVideo(b.Geometry.RandomFarPoint(b.Motion.Position, 320 * b.DpiScale, b.Margin, b.Rng));
         b.Motion.MoveTo(p, b.Speed(165) * b.Variant.WanderSpeed(), b.Speed(120));
         b.Animator.Play(Clips.Travel, 0.6f);
     }
@@ -289,6 +290,53 @@ public sealed class GroupGameBehavior : Behavior
     }
 
     private static float Hop(float x) => MathF.Abs(MathF.Sin(x));
+}
+
+/// <summary>
+/// A fullscreen video was detected. On a multi-monitor rig, an interested companion already on
+/// the video's monitor relocates to another display and faces back toward it; elsewhere it just
+/// settles and watches. Ends itself the moment the video stops being fullscreen (<see cref="Brain.Video"/>),
+/// so it never needs an external interrupt to wind down.
+/// </summary>
+public sealed class WatchingMovieBehavior : Behavior
+{
+    public override BehaviorKind Kind => BehaviorKind.WatchingMovie;
+    public override bool Interruptible => false; // takes priority over ordinary wandering/social picks
+    public override void Enter(Brain b) => b.Animator.Play(Clips.Watching, 0.5f);
+
+    public override bool Update(Brain b, float dt)
+    {
+        if (b.Video is not { Fullscreen: true } v) return false;
+
+        if (b.Geometry.Monitors.Count > 1)
+        {
+            var videoMonitor = b.Geometry.MonitorAt(v.Bounds.Center);
+            var here = b.Geometry.MonitorAt(b.Motion.Position);
+            if (b.CanMove && here.Id == videoMonitor.Id)
+            {
+                // Only ever cross to a monitor the straight line actually stays visible on —
+                // otherwise the safety check mid-transit would hand this off to ReturningBehavior
+                // and undo the move.
+                var other = b.Geometry.Monitors.FirstOrDefault(m => m.Id != videoMonitor.Id &&
+                    b.Geometry.PathIsVisible(b.Motion.Position, m.WorkArea.Deflate(b.Margin).Center));
+                if (other != null) b.Motion.MoveTo(other.WorkArea.Deflate(b.Margin).Center, b.Speed(130), b.Speed(200));
+                else b.Motion.Release(b.Speed(40));
+            }
+            else b.Motion.Release(b.Speed(40));
+
+            Vector2 toward = videoMonitor.Bounds.Center - b.Motion.Position;
+            b.LookOverride = toward.LengthSquared() > 1 ? Vector2.Normalize(toward) : Vector2.Zero;
+        }
+        else b.Motion.Release(b.Speed(40));
+
+        return true;
+    }
+
+    public override void Exit(Brain b)
+    {
+        b.LookOverride = null;
+        b.Motion.Release(b.Speed(170));
+    }
 }
 
 public sealed class AffectionateBehavior : Behavior
