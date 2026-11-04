@@ -94,6 +94,10 @@
     {
       "date": "2026-11-04",
       "summary": "Added billiard-ball collision between companions (CompanionCollision): overlapping pets are pushed apart and exchange velocity on the collision normal, so flicking one into another shoves it instead of passing through; dragged pets stay pinned but still shove, and choreographed group routines are exempt. Completed ROADMAP 35."
+    },
+    {
+      "date": "2026-11-04",
+      "summary": "Softened the companion collision bounce: added a restitution coefficient (0.35) instead of a full elastic velocity swap, so colliding pets settle toward a shared speed rather than bouncing off each other hard."
     }
   ]
 }
