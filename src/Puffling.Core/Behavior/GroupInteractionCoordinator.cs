@@ -16,7 +16,9 @@ namespace Puffling.Core.Behavior;
 ///     three to chase, spar, or have a staring contest, leaving the third to do its own thing.
 ///     The pair is chosen with a personality-shaped weighting: red and blue (the composed leader
 ///     and the bubbly one) gravitate to each other most, red occasionally draws green in, and
-///     blue and green pair up least — green mostly keeps to itself.
+///     blue and green pair up least — green mostly keeps to itself. When red draws green in
+///     specifically, green sometimes turns the invitation down outright (a quick, minor beat, not
+///     a "major" interaction) rather than every pairing always succeeding.
 /// With exactly one Puffling visible, there is no group routine; see <see cref="Brain.Searching"/>
 /// -style loneliness reactions instead (driven by <see cref="Brain.CompanionsPresent"/>).
 /// </summary>
@@ -82,12 +84,23 @@ public sealed class GroupInteractionCoordinator
         _nextPairAt = Math.Max(_nextPairAt, now + RandomRange(45, 90));
     }
 
+    /// <summary>Chance a Red-initiated invitation to Green is turned down — a quick, minor beat
+    /// (Green keeps doing whatever it was doing), not a "major" interaction worth the full cooldown.</summary>
+    private const float GreenDeclineChance = 0.4f;
+
     private void TryStartPair(double now, IReadOnlyList<Companion> companions)
     {
         if (now < _nextPairAt) return;
         var (a, b) = PickPair(companions);
         var pair = new[] { a, b };
         if (!AllEligible(pair)) { _nextPairAt = now + 5; return; }
+
+        if (IsRedInvitingGreen(a, b, out var red, out _) && _rng.NextDouble() < GreenDeclineChance)
+        {
+            red.Brain.Interrupt(red.Brain.Create(BehaviorKind.Declined));
+            _nextPairAt = now + RandomRange(25, 45);
+            return;
+        }
 
         Vector2 centre = Centre(pair, out float radius);
         GroupGameKind? game = (_pairRoutineIndex++ % 3) switch
@@ -118,6 +131,16 @@ public sealed class GroupInteractionCoordinator
             r -= c.Weight;
         }
         return (combos[0].A, combos[0].B);
+    }
+
+    /// <summary>True when this pair is specifically Red and Green — the one relationship where
+    /// there's a clear initiator (Red) rather than a mutual approach.</summary>
+    private static bool IsRedInvitingGreen(Companion a, Companion b, out Companion red, out Companion green)
+    {
+        if (a.Variant == CompanionVariant.Red && b.Variant == CompanionVariant.Green) { red = a; green = b; return true; }
+        if (b.Variant == CompanionVariant.Red && a.Variant == CompanionVariant.Green) { red = b; green = a; return true; }
+        red = a; green = b;
+        return false;
     }
 
     private static float Affinity(CompanionVariant a, CompanionVariant b)

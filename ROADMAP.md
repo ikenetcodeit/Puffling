@@ -58,6 +58,13 @@ reprioritized.
   unaffected — adjacent monitors still read as one continuous safe area, so travelling between
   displays never counts as "off screen." Dragged pets are exempt (never fight the user's hand).
 
+- [x] **37. Let Green decline Red's invitations.** When Red specifically draws Green into a duo
+  (see item 34), Green now sometimes turns the invitation down outright: Red plays a brief,
+  good-natured `BehaviorKind.Declined` shrug while Green is left completely untouched, continuing
+  whatever it was already doing. A decline is a quick, minor beat rather than a "major"
+  interaction, so it only costs a short 25-45s retry instead of the full duo cooldown. See
+  `GroupInteractionCoordinator.TryStartPair` / `IsRedInvitingGreen`.
+
 ## Milestone 3 — Presentation
 
 - [x] **5. Fix README GIF frame smearing.** Every README GIF, including pair and trio previews,
@@ -145,6 +152,62 @@ click/double-click/drag/petting.
 - [ ] **24. Notification history.** A small "what did I miss" tray item listing the last few
   system-activity and reminder bubbles, rendered in the same pixel font, for when a bubble was
   shown while the user was away.
+
+## Milestone 6 — Personality & social expansion spec
+
+Tracks a user-provided design spec ("Puffling Companion — Personality, Social Interaction, and
+System Awareness Expansion") against what's already built. Its architecture names map onto
+existing code rather than new classes, per the spec's own guidance to reuse equivalents:
+`PersonalityProfile` → `CompanionVariant`/`CompanionVariants`; `RelationshipManager` → the
+`Affinity()` weighting in `GroupInteractionCoordinator`; `SocialInteractionScheduler`/
+`SocialInteractionController` → `GroupInteractionCoordinator`; `ContextActivityDetector` →
+`SystemActivityDetector`; `NotificationManager` → `SpeechBubbleWindow` + `CompanionApp.Say`.
+
+**Already satisfied** by items 3, 4, 34, 35, 36, 37, and the existing click/variant reactions:
+distinct personalities per variant; blue+red pairing most often, red initiating with green
+(including Green sometimes declining); green favoring independent activity; the ≥180s global
+cooldown on major (full-group) interactions with a shorter, separate cadence for minor ones;
+pair/group routine variety (dance, chase, spar, pong, staring contest) without back-to-back
+repeats (`_routineIndex`/`_pairRoutineIndex` cycling); the solo "looking for someone" reaction
+gated to exactly one companion present; music/video/coding/agent ambient reactions; pixel-font
+notifications. Eligibility already excludes paused/asleep/cross-monitor/mid-activity pets
+(`AllEligible`).
+
+**Not yet implemented** — pull into active work individually rather than all at once:
+
+- [ ] **38. Video-watching mode: gather and face the screen.** The current `Watching` ambient
+  pose (item 4) doesn't yet implement the spec's fuller behavior: on a multi-monitor setup with
+  fullscreen video detected, move interested Pufflings to a secondary monitor facing the video
+  display (optionally with a tiny popcorn prop); on single-monitor fullscreen video, hide/suspend
+  visible Pufflings instead (reuse `FullscreenDetector`); for *windowed* video, reduce movement
+  speed/intensity and keep companions from crossing the video window's bounds, while uninvolved
+  Pufflings carry on independently. Should take priority over wandering/social routines whenever
+  it would otherwise obstruct playback.
+- [ ] **39. Distinguish AI-agent lifecycle states.** `AgentBusy` is currently a single ambient
+  pose for "some agent process is running." Expand `SystemActivity.AgentRunning` into distinct
+  idle/running/waiting-for-input/succeeded/failed signals wherever a reliable integration exists
+  (explicit lifecycle events, not inferred from a terminal merely being open), with matching
+  clips: supervising, impatient (green wandering off), celebrating on success, puzzled on failure.
+- [ ] **40. React to Windows toast notifications.** Distinct from Puffling's own bubbles (item 24
+  covers a history of those): have a nearby, available Puffling glance toward a real incoming
+  Windows notification via the supported notification-listener APIs, occasionally with a subtle
+  alert clip — without reading or exposing notification content, and without triggering every
+  visible Puffling at once.
+- [ ] **41. More unique per-variant idle flourishes.** The spec lists many small per-personality
+  animations beyond what exists today (e.g. Blue: shy hiding, gentle humming, briefly admiring
+  something; Red: confident hovering, inspecting active windows, checking on everyone; Green:
+  challenging poses, mischievous staring, turning away when uninterested). Add a handful at a
+  time as new idle-weighted clips per variant rather than all at once — each needs its own clip,
+  a `ChooseNext`/`CompanionVariants` weight, and canvas-safety coverage in `AllClips`.
+- [ ] **42. More environmental/emergent behaviors.** From the spec's list, still open: resting
+  preferentially at a remembered favorite spot, occasionally visiting another Puffling's favorite
+  spot, inspecting a desktop icon without activating it, a rare trip-and-recover stumble, and a
+  companion reacting to watching another one sleep. (Watching the cursor and reacting to a
+  disconnected monitor already exist via `CuriousBehavior` and `UpdateGeometry`.)
+
+Items 19 (build/test outcomes), 20 (battery), 21 (gaming detection), 22 (per-personality system-
+activity flavor), and 24 (notification history) in Milestone 5 already cover other parts of this
+spec's System-Aware Activities and Notifications sections — no duplicate items needed for those.
 
 ## Later ideas
 

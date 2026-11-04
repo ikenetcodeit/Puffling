@@ -268,6 +268,7 @@ public sealed class Brain
         BehaviorKind.Coding => new ClipBehavior(k, Clips.Coding, 0.4f),
         BehaviorKind.AgentBusy => new ClipBehavior(k, Clips.AgentBusy, 0.25f),
         BehaviorKind.Searching => new ClipBehavior(k, Clips.Searching, 0.4f),
+        BehaviorKind.Declined => new ClipBehavior(k, Clips.Declined, 0.3f),
         _ => new IdleBehavior(),
     };
 

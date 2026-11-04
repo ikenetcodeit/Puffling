@@ -9,7 +9,7 @@ public enum BehaviorKind
     Idle, Wander, Travel, Curious, Happy, Excited, Surprised, Dance, Affectionate,
     Follow, ComeHere, Drowsy, Sleeping, Waking, Returning, Dragged, Settling,
     PairPlay, TrioPlay, GroupChase, GroupSpar, GroupPong, GroupStare, Signature,
-    Grooving, Watching, Coding, AgentBusy, Searching,
+    Grooving, Watching, Coding, AgentBusy, Searching, Declined,
 }
 
 public static class BehaviorKinds

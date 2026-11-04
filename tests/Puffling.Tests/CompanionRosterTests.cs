@@ -279,4 +279,30 @@ public static class CompanionRosterTests
         Assert.True(redBlue > 0, "red and blue pair up at least once");
         Assert.True(redBlue > blueGreen, "red and blue gravitate to each other more than blue and green");
     }
+
+    [Test]
+    public static void Green_SometimesDeclinesRedsInvitation_WithoutInterruptingGreen()
+    {
+        var geometry = ScreenGeometry.Single(1920, 1080);
+        var trio = MakePets(geometry, 3); // [0]=Red, [1]=Blue, [2]=Green
+        var coordinator = new GroupInteractionCoordinator(seed: 11);
+        coordinator.Tick(0, trio);
+
+        bool sawDecline = false;
+        double now = 0;
+        for (int i = 0; i < 60 && !sawDecline; i++)
+        {
+            now += 65;
+            var greenBefore = trio[2].CurrentBehavior;
+            coordinator.Tick(now, trio);
+            if (trio[0].CurrentBehavior == BehaviorKind.Declined)
+            {
+                sawDecline = true;
+                Assert.Equal(greenBefore, trio[2].CurrentBehavior, "green isn't interrupted by a declined invitation");
+                Assert.Equal(BehaviorKind.Idle, trio[1].CurrentBehavior, "blue is uninvolved and keeps its own behavior");
+            }
+            foreach (var pet in trio) pet.Brain.Interrupt(new IdleBehavior());
+        }
+        Assert.True(sawDecline, "red's invitation to green is sometimes turned down");
+    }
 }

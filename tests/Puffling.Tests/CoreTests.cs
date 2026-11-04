@@ -20,7 +20,7 @@ public static class RenderingTests
         Clips.Signature(Puffling.Core.Character.CompanionVariant.Green),
         Clips.GroupGame(GroupGameKind.Chase, 0), Clips.GroupGame(GroupGameKind.Spar, 1),
         Clips.GroupGame(GroupGameKind.Pong, 2),
-        Clips.Grooving, Clips.Watching, Clips.Coding, Clips.AgentBusy,
+        Clips.Grooving, Clips.Watching, Clips.Coding, Clips.AgentBusy, Clips.Searching, Clips.Declined,
     };
 
     [Test]

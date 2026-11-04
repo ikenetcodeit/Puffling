@@ -102,6 +102,10 @@
     {
       "date": "2026-11-04",
       "summary": "Added an instant screen-edge bounce (ScreenEdgeCollision): a companion is clamped to the nearest safe point and its overshoot velocity reflected the moment it would leave the comfortably-visible area, instead of drifting off-screen until the slower ReturningBehavior caught up. Multi-monitor crossing is unaffected. Completed ROADMAP 36."
+    },
+    {
+      "date": "2026-11-04",
+      "summary": "Adopted a user-provided personality/social/system-awareness design spec into the roadmap as Milestone 6, mapping its architecture onto existing code and listing what's done versus open. Implemented one of its mechanics: Green now sometimes declines Red's invitation to a duo (BehaviorKind.Declined), leaving Green uninterrupted. Completed ROADMAP 37."
     }
   ]
 }

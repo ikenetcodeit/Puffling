@@ -49,6 +49,7 @@ public static class Clips
     public static readonly IClip Coding = new CodingClip();
     public static readonly IClip AgentBusy = new AgentBusyClip();
     public static readonly IClip Searching = new SearchingClip();
+    public static readonly IClip Declined = new DeclinedClip();
     private static readonly IClip RedMove = new SignatureClip(CompanionVariant.Red);
     private static readonly IClip BlueMove = new SignatureClip(CompanionVariant.Blue);
     private static readonly IClip GreenMove = new SignatureClip(CompanionVariant.Green);
@@ -529,6 +530,26 @@ public static class Clips
             p.Pitch = 0.05f * MathF.Sin(t * 0.9f);
             p.TentacleAmplitude = 0.14f; p.TentacleSpeed = 2.4f;
             p.GoggleWiggle = 0.2f * MathF.Sin(t * 2f);
+            return p;
+        }
+    }
+
+    /// <summary>A brief, good-natured deflation for the one whose invitation to play was turned
+    /// down — a small shrug, not real distress.</summary>
+    private sealed class DeclinedClip : IClip
+    {
+        public string Name => "Declined";
+        public float? Duration => 1.6f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            float env = Decay(t, 2.5f);
+            p.Expression = Expression.Sleepy;
+            p.Pitch = 0.12f * MathF.Min(1f, t * 3f);
+            p.Squash = 1f - 0.05f * env;
+            p.OffsetY = 1.5f * MathF.Min(1f, t * 2f);
+            p.TentacleAmplitude = 0.08f; p.TentacleSpeed = 1.2f; p.TentacleSpread = -0.08f;
+            p.GoggleWiggle = -0.15f * env;
             return p;
         }
     }
