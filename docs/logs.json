@@ -62,6 +62,10 @@
     {
       "date": "2026-11-03",
       "summary": "Expanded Puffling individuality with red, blue, and green faces, temperaments, click reactions, and solo moves; added synchronized chase, bounce sparring, and three-pet pong games and refreshed the README previews."
+    },
+    {
+      "date": "2026-11-04",
+      "summary": "Rewrote AGENTS.md with project-specific build/test/preview commands and conventions, and replaced TODO.md with ROADMAP.md, adding a Later ideas section of proposed features."
     }
   ]
 }
