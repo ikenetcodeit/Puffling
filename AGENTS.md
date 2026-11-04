@@ -49,6 +49,31 @@ a real clock, or real OS APIs belongs in `Puffling.Core` so it stays testable.
 
 - Work through `ROADMAP.md` in order within whichever milestone is active; the desktop-assistant
   section at the bottom is deferred and should stay untouched until it's explicitly reprioritized.
+  Some items (e.g. the personality/spec items in Milestone 6) are explicitly incremental ("a
+  handful at a time") — it's fine to land a partial slice as its own commit and leave the item
+  unchecked with a note on what's still open, rather than forcing everything into one change.
+- Before implementing a roadmap item that's large, touches unfamiliar code, or depends on a real
+  platform API (notification listeners, Shell icon interop, packaging, ...), research it first —
+  map the existing extensibility points it should plug into (behavior/clip/settings wiring
+  patterns, existing coordinators) and the real feasibility of any new platform dependency, rather
+  than guessing. A background research pass (e.g. a forked/sub-agent investigation) that reports
+  back before any code is written works well here.
+- When a roadmap item's scope hinges on a real design tradeoff only the user can weigh (e.g.
+  whether to add packaging just to call an official API, versus an unofficial workaround, versus
+  deferring) — ask, rather than picking a direction unilaterally. If the answer is "defer," still
+  record the scoping work directly on the roadmap item (what's blocking it, what the options were)
+  so the research doesn't need repeating later, and log/commit that as its own small change.
+- Build and run the full test suite after each meaningful increment, not just once at the end —
+  it catches regressions (and RNG-distribution shifts in probabilistic tests) close to the change
+  that caused them. Before a final commit, build the whole solution
+  (`dotnet build Puffling.sln -c Release`), not just `Puffling.Core`, so `Puffling.App`/
+  `Puffling.Preview` wiring is verified too.
+- A seeded, probabilistic test that starts failing after an unrelated change is a signal to find
+  the actual mechanism (a new option diluting an existing weighted pick, a safety net hijacking a
+  deliberate move mid-transit, two independent RNG streams no longer lining up, ...), not just to
+  widen a tolerance or pick a different seed until it passes. Several of those turned out to be
+  real bugs (see item 38's and item 42's notes in `ROADMAP.md`) rather than test flakiness.
 - After completing each task, add a concise entry to `docs/logs.json` describing what was done.
 - Commit the completed task's changes to the local Git repository. Keep unrelated changes out of
   the commit.
+- Don't push to the remote unless explicitly asked.
