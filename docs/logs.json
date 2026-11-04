@@ -126,6 +126,10 @@
     {
       "date": "2026-11-04",
       "summary": "Added the first handful of per-variant idle flourishes (ROADMAP 41, left open for more): Blue's shy retreat, Red's composed steady-hover, and Green's sly side-eye stare, each a rare variant-exclusive ClipBehavior. Fixed a real gap surfaced along the way: a windowed video's 'wandering never crosses it' guarantee only came from Wander/Travel/AgentWaiting avoiding it as a destination, so any non-moving clip behavior (now including these flourishes) could still glide through on residual velocity mid-interrupt; added Puffling.Core.Movement.VideoWindowCollision to bounce a companion back out instantly, mirroring ScreenEdgeCollision but for an interior rectangle."
+    },
+    {
+      "date": "2026-11-04",
+      "summary": "Added a second handful of per-variant idle flourishes (ROADMAP 41, still left open): Blue's gentle humming, Red's quiet window-scan, and Green's dismissive turning-away, wired the same way as the first handful. Still open from the spec: Blue admiring something, Red checking on everyone, Green's challenging pose."
     }
   ]
 }

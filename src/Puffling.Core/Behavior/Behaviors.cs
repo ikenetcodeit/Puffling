@@ -13,6 +13,7 @@ public enum BehaviorKind
     Grooving, Watching, Coding, AgentBusy, Searching, Declined, WatchingMovie,
     AgentWaiting, AgentSucceeded, AgentFailed,
     Shy, Hovering, Mischievous,
+    Humming, Inspecting, Aloof,
 }
 
 public static class BehaviorKinds

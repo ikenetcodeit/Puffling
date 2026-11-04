@@ -24,6 +24,7 @@ public static class RenderingTests
         Clips.Grooving, Clips.Watching, Clips.Coding, Clips.AgentBusy, Clips.Searching, Clips.Declined,
         Clips.AgentWaiting, Clips.AgentSucceeded, Clips.AgentFailed,
         Clips.Shy, Clips.Hovering, Clips.Mischievous,
+        Clips.Humming, Clips.Inspecting, Clips.Aloof,
     };
 
     [Test]
@@ -486,29 +487,29 @@ public static class BehaviorTests
     }
 
     [Test]
-    public static void EachVariant_EventuallyPlaysItsOwnIdleFlourish_ButNeverAnothers()
+    public static void EachVariant_EventuallyPlaysItsOwnIdleFlourishes_ButNeverAnothers()
     {
         var g = ScreenGeometry.Single(1920, 1080);
-        var flourishes = new (CompanionVariant variant, BehaviorKind own)[]
+        var own = new Dictionary<CompanionVariant, BehaviorKind[]>
         {
-            (CompanionVariant.Blue, BehaviorKind.Shy),
-            (CompanionVariant.Red, BehaviorKind.Hovering),
-            (CompanionVariant.Green, BehaviorKind.Mischievous),
+            [CompanionVariant.Blue] = [BehaviorKind.Shy, BehaviorKind.Humming],
+            [CompanionVariant.Red] = [BehaviorKind.Hovering, BehaviorKind.Inspecting],
+            [CompanionVariant.Green] = [BehaviorKind.Mischievous, BehaviorKind.Aloof],
         };
-        var allFlourishes = new[] { BehaviorKind.Shy, BehaviorKind.Hovering, BehaviorKind.Mischievous };
+        var allFlourishes = own.Values.SelectMany(k => k).ToArray();
 
-        foreach (var (variant, own) in flourishes)
+        foreach (var (variant, mine) in own)
         {
             var c = new Companion(new CompanionSettings { ActivityFrequency = 2f }, g, seed: 55, variant);
-            bool sawOwn = false;
-            for (int i = 0; i < 30 * 600 && !sawOwn; i++)
+            var seen = new HashSet<BehaviorKind>();
+            for (int i = 0; i < 30 * 1200 && !mine.All(seen.Contains); i++)
             {
                 c.Tick(1 / 30f, new FrameInputs(new Vector2(-9000, -9000), 0));
                 var k = c.CurrentBehavior;
-                if (k == own) sawOwn = true;
+                if (mine.Contains(k)) seen.Add(k);
                 else Assert.True(!allFlourishes.Contains(k), $"{variant} must never play another variant's flourish ({k})");
             }
-            Assert.True(sawOwn, $"{variant} never played its own idle flourish within 10 simulated minutes");
+            Assert.True(mine.All(seen.Contains), $"{variant} never played all of its own idle flourishes within 20 simulated minutes");
         }
     }
 
