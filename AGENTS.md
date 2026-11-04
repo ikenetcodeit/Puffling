@@ -11,6 +11,9 @@ a real clock, or real OS APIs belongs in `Puffling.Core` so it stays testable.
 ## Build, test, and preview
 
 - Run the test suite before considering a change done: `dotnet run --project tests/Puffling.Tests -c Release`.
+- If a `Puffling.exe` instance is already running when you're about to build or test, it locks
+  `Puffling.Core.dll`/`Puffling.dll` and the build fails with a file-copy error. Stop it first
+  (e.g. `taskkill /IM Puffling.exe /F`), then continue testing.
 - `./build.ps1` runs the tests and then publishes `dist/<runtime>/Puffling.exe` (add
   `-SelfContained` to bundle the runtime, or `-Runtime win-arm64` for ARM).
 - Regenerate preview art with `dotnet run --project tools/Puffling.Preview -- preview expressions`

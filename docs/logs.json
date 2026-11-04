@@ -74,6 +74,10 @@
     {
       "date": "2026-11-04",
       "summary": "Made group play rare (every 3-5 min) and personality-shaped: a shorter, separate duo routine (dance/chase/staring contest) now pairs two of three Pufflings by temperament affinity (red-blue most, red-green sometimes, blue-green least), and a lone Puffling eventually plays a one-off 'looking for someone' clip; completed ROADMAP 34."
+    },
+    {
+      "date": "2026-11-04",
+      "summary": "Documented in AGENTS.md that a running Puffling.exe must be stopped before building or testing, since it locks the DLLs the build needs to copy."
     }
   ]
 }
