@@ -78,6 +78,10 @@
     {
       "date": "2026-11-04",
       "summary": "Documented in AGENTS.md that a running Puffling.exe must be stopped before building or testing, since it locks the DLLs the build needs to copy."
+    },
+    {
+      "date": "2026-11-04",
+      "summary": "Made the drag-and-flick release fluid and floaty: it now keeps more of the throw's momentum (0.6x -> 0.8x) and decelerates far more gently (900 -> 300 DPI-scaled units/s^2) instead of snapping to a stop."
     }
   ]
 }

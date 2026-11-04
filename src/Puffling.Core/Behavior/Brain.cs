@@ -313,8 +313,8 @@ public sealed class Brain
                 var v = e.Velocity;
                 float max = 1200f * DpiScale;
                 if (v.Length() > max) v = Vector2.Normalize(v) * max;
-                Motion.Velocity = v * 0.6f; // a gentle toss, not a cannon
-                Motion.Release(900f * DpiScale);
+                Motion.Velocity = v * 0.8f; // keep most of the throw's momentum
+                Motion.Release(300f * DpiScale); // gentle drag so a flick glides and drifts, not snaps to a stop
                 _queued = BehaviorKind.Settling;
                 break;
 
