@@ -118,6 +118,10 @@
     {
       "date": "2026-11-04",
       "summary": "Distinguished AI-agent lifecycle states: SystemActivity gained AgentIdle/AgentWaitingForInput/AgentSucceeded/AgentFailed alongside AgentRunning, each with its own clip (impatient, celebrating, puzzled) and BehaviorKind; Green sometimes wanders off instead of waiting it out (AgentWaitingBehavior). Documented a tool-agnostic JSON lifecycle file (docs/agent-lifecycle.md, %LOCALAPPDATA%\\Puffling\\agent-lifecycle.json) any external script can write, parsed by the new Puffling.Core.Behavior.AgentLifecycle (required, freshness-checked updatedAt) and read by SystemActivityDetector, which falls back to the existing coarse process-presence guess when the file is absent, stale, or malformed. Completed ROADMAP 39."
+    },
+    {
+      "date": "2026-11-04",
+      "summary": "Scoped ROADMAP 40 (toast notification reactions) and deliberately deferred it: the official UserNotificationListener API needs package identity (sparse MSIX, manifest capability, a build.ps1 packaging step) plus a one-time Windows Settings consent grant, which is a real scope increase for a repo that's a plain unpackaged exe today. Documented the only unpackaged-friendly alternative (an unofficial SetWinEventHook-based toast-popup watch, needing empirical window-class verification first) directly on the roadmap item for whoever picks this up next. No code changes."
     }
   ]
 }

@@ -214,7 +214,18 @@ notifications. Eligibility already excludes paused/asleep/cross-monitor/mid-acti
   covers a history of those): have a nearby, available Puffling glance toward a real incoming
   Windows notification via the supported notification-listener APIs, occasionally with a subtle
   alert clip — without reading or exposing notification content, and without triggering every
-  visible Puffling at once.
+  visible Puffling at once. Scoped but deliberately deferred: the official
+  `Windows.UI.Notifications.Management.UserNotificationListener` API needs package identity (a
+  sparse MSIX package, a manifest `uap3:Capability`, and a packaging step in `build.ps1`) plus a
+  one-time "Notification access" grant in Windows Settings — Puffling is a plain unpackaged exe
+  today and that's a real scope increase, not a drop-in addition. The only unpackaged-friendly path
+  is an unofficial `SetWinEventHook(EVENT_OBJECT_SHOW, ...)` watch for the toast popup window
+  itself (mirroring `FullscreenDetector`'s class-name-based approach, and structurally unable to
+  read content either way), but the window class/owning process has shifted across Windows
+  versions and needs empirical verification on real Windows 10/11 machines before it can be relied
+  on, with a graceful no-op fallback the same way `SystemActivityDetector` degrades. Revisit if
+  either packaging becomes worthwhile for other reasons, or someone confirms a current, stable
+  window signature to key off of.
 - [ ] **41. More unique per-variant idle flourishes.** The spec lists many small per-personality
   animations beyond what exists today (e.g. Blue: shy hiding, gentle humming, briefly admiring
   something; Red: confident hovering, inspecting active windows, checking on everyone; Green:
