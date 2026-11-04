@@ -102,9 +102,16 @@ public sealed class Companion
         Animator.Intensity = Settings.AnimationIntensity;
         Brain.Tick(dt);
         // A dragged pet is glued to the cursor, and WatchingMovie/Travel deliberately cross
-        // monitors themselves (path-validated) — bouncing any of them would fight the intended motion.
+        // monitors themselves (path-validated) — bouncing either off a screen edge would fight
+        // the intended motion.
         if (Brain.Current.Kind is not (BehaviorKind.Dragged or BehaviorKind.WatchingMovie or BehaviorKind.Travel))
             ScreenEdgeCollision.Bounce(Motion, Geometry, Brain.Margin);
+        // Travel's destination avoids a windowed video (Brain.AvoidVideo), but the straight path
+        // there isn't validated against it the way monitor crossings are — so it still needs this
+        // bounce to keep from cutting through the window along the way. Only WatchingMovie
+        // deliberately interacts with video, and dragging is always user-controlled.
+        if (Brain.Current.Kind is not (BehaviorKind.Dragged or BehaviorKind.WatchingMovie))
+            VideoWindowCollision.Bounce(Motion, Brain.Video);
     }
 
     public void Execute(CompanionCommand c) => Brain.Execute(c);

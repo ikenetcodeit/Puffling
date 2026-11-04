@@ -135,6 +135,7 @@ public sealed class Brain
         [BehaviorKind.Coding] = 18, [BehaviorKind.AgentBusy] = 12,
         [BehaviorKind.AgentWaiting] = 15, [BehaviorKind.AgentSucceeded] = 20, [BehaviorKind.AgentFailed] = 20,
         [BehaviorKind.Searching] = 50,
+        [BehaviorKind.Shy] = 45, [BehaviorKind.Hovering] = 45, [BehaviorKind.Mischievous] = 45,
     };
 
     public Brain(Motion motion, Animator animator, ScreenGeometry geometry, CompanionSettings settings, Random rng,
@@ -278,6 +279,9 @@ public sealed class Brain
             (BehaviorKind.AgentSucceeded, SystemActivity == SystemActivity.AgentSucceeded ? 1.5f * f : 0f),
             (BehaviorKind.AgentFailed, SystemActivity == SystemActivity.AgentFailed ? 1.5f * f : 0f),
             (BehaviorKind.Searching, CompanionsPresent <= 1 ? 0.6f * f : 0f),
+            (BehaviorKind.Shy, Variant == CompanionVariant.Blue ? 0.18f * f : 0f),
+            (BehaviorKind.Hovering, Variant == CompanionVariant.Red ? 0.18f * f : 0f),
+            (BehaviorKind.Mischievous, Variant == CompanionVariant.Green ? 0.18f * f : 0f),
         };
 
         float total = 0;
@@ -327,6 +331,9 @@ public sealed class Brain
         BehaviorKind.AgentFailed => new ClipBehavior(k, Clips.AgentFailed, 0.25f),
         BehaviorKind.Searching => new ClipBehavior(k, Clips.Searching, 0.4f),
         BehaviorKind.Declined => new ClipBehavior(k, Clips.Declined, 0.3f),
+        BehaviorKind.Shy => new ClipBehavior(k, Clips.Shy, 0.3f),
+        BehaviorKind.Hovering => new ClipBehavior(k, Clips.Hovering, 0.4f),
+        BehaviorKind.Mischievous => new ClipBehavior(k, Clips.Mischievous, 0.3f),
         BehaviorKind.WatchingMovie => new WatchingMovieBehavior(),
         _ => new IdleBehavior(),
     };

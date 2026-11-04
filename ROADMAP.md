@@ -232,6 +232,18 @@ notifications. Eligibility already excludes paused/asleep/cross-monitor/mid-acti
   challenging poses, mischievous staring, turning away when uninterested). Add a handful at a
   time as new idle-weighted clips per variant rather than all at once — each needs its own clip,
   a `ChooseNext`/`CompanionVariants` weight, and canvas-safety coverage in `AllClips`.
+  First handful landed: one flourish per variant — Blue's shy retreat (`BehaviorKind.Shy`), Red's
+  composed, steady-hover pose (`BehaviorKind.Hovering`), and Green's sly side-eye stare
+  (`BehaviorKind.Mischievous`) — each a rare (0.18 weight, 45s cooldown), variant-exclusive pick in
+  `Brain.ChooseNext`. Still open from the spec: Blue's gentle humming and admiring-something beats,
+  Red's window-inspecting and checking-on-everyone beats, and Green's challenging pose and
+  turning-away-when-uninterested beat. Fixing this also surfaced and fixed a real gap: a windowed
+  video's "wandering never crosses it" guarantee only ever came from `Wander`/`Travel`/
+  `AgentWaiting` choosing destinations outside it (`Brain.AvoidVideo`) — any non-moving clip
+  behavior (now including these flourishes) could still glide through on residual velocity if
+  interrupted mid-transit right at the window's edge. `Puffling.Core.Movement.VideoWindowCollision`
+  now bounces a companion back out the instant that happens, the same instant-bounce shape as
+  `ScreenEdgeCollision` but for an interior rectangle.
 - [ ] **42. More environmental/emergent behaviors.** From the spec's list, still open: resting
   preferentially at a remembered favorite spot, occasionally visiting another Puffling's favorite
   spot, inspecting a desktop icon without activating it, a rare trip-and-recover stumble, and a

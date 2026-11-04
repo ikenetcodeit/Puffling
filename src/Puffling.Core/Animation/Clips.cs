@@ -53,6 +53,9 @@ public static class Clips
     public static readonly IClip AgentFailed = new AgentFailedClip();
     public static readonly IClip Searching = new SearchingClip();
     public static readonly IClip Declined = new DeclinedClip();
+    public static readonly IClip Shy = new ShyClip();
+    public static readonly IClip Hovering = new HoveringClip();
+    public static readonly IClip Mischievous = new MischievousClip();
     private static readonly IClip RedMove = new SignatureClip(CompanionVariant.Red);
     private static readonly IClip BlueMove = new SignatureClip(CompanionVariant.Blue);
     private static readonly IClip GreenMove = new SignatureClip(CompanionVariant.Green);
@@ -619,6 +622,65 @@ public static class Clips
             p.OffsetY = 1.5f * MathF.Min(1f, t * 2f);
             p.TentacleAmplitude = 0.08f; p.TentacleSpeed = 1.2f; p.TentacleSpread = -0.08f;
             p.GoggleWiggle = -0.15f * env;
+            return p;
+        }
+    }
+
+    /// <summary>Blue idle flourish: a brief shy retreat — tucking down and looking away rather
+    /// than at anything in particular — before resuming as if nothing happened.</summary>
+    private sealed class ShyClip : IClip
+    {
+        public string Name => "Shy";
+        public float? Duration => 2.6f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            float tuck = MathF.Sin(MathF.Min(1f, t / 1.1f) * MathF.PI); // down and back up
+            p.Expression = Expression.Sleepy;
+            p.Pitch = 0.16f * tuck;
+            p.Squash = 1f - 0.08f * tuck;
+            p.OffsetY = 2f * tuck;
+            p.Yaw = -0.18f * tuck;
+            p.LookX = -0.5f * tuck; p.LookY = 0.2f * tuck;
+            p.TentacleAmplitude = 0.08f; p.TentacleSpeed = 1.4f; p.TentacleSpread = -0.1f * tuck;
+            return p;
+        }
+    }
+
+    /// <summary>Red idle flourish: a steady, chin-up hover with almost no wobble — the composed
+    /// leader surveying things rather than drifting idly.</summary>
+    private sealed class HoveringClip : IClip
+    {
+        public string Name => "Hovering";
+        public float? Duration => 3.2f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            p.Expression = Expression.Happy;
+            p.BobAmplitude = 0.6f; p.BobSpeed = 1.1f;
+            p.Pitch = -0.08f;
+            p.OffsetY = -1.5f;
+            p.LookX = c.LookDir.X * 0.3f; p.LookY = -c.LookDir.Y * 0.3f;
+            p.TentacleAmplitude = 0.1f; p.TentacleSpeed = 1f; p.TentacleSpread = 0.04f;
+            return p;
+        }
+    }
+
+    /// <summary>Green idle flourish: a sly, lingering side-eye stare with a crooked smirk-tilt.</summary>
+    private sealed class MischievousClip : IClip
+    {
+        public string Name => "Mischievous";
+        public float? Duration => 2.8f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            p.Expression = Expression.Curious;
+            float sweep = MathF.Sin(t * 1.1f);
+            p.LookX = 0.7f * sweep; p.LookY = 0.1f;
+            p.Roll = 0.14f;
+            p.Pitch = 0.05f;
+            p.TentacleAmplitude = 0.12f; p.TentacleSpeed = 1.6f; p.TentacleSpread = -0.06f;
+            p.GoggleWiggle = 0.25f * MathF.Sin(t * 2.3f);
             return p;
         }
     }

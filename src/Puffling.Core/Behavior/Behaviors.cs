@@ -12,6 +12,7 @@ public enum BehaviorKind
     PairPlay, TrioPlay, GroupChase, GroupSpar, GroupPong, GroupStare, Signature,
     Grooving, Watching, Coding, AgentBusy, Searching, Declined, WatchingMovie,
     AgentWaiting, AgentSucceeded, AgentFailed,
+    Shy, Hovering, Mischievous,
 }
 
 public static class BehaviorKinds
