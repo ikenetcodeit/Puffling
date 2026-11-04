@@ -53,7 +53,8 @@ public sealed class Brain
         {
             if (_systemActivity == value) return;
             _systemActivity = value;
-            if (value != SystemActivity.None && Current.Interruptible &&
+            // None and AgentIdle both mean "nothing noteworthy" — no pose change to react with.
+            if (value is not (SystemActivity.None or SystemActivity.AgentIdle) && Current.Interruptible &&
                 Current.Kind is BehaviorKind.Idle or BehaviorKind.Wander or BehaviorKind.Curious)
                 Interrupt(Create(ActivityBehaviorKind(value)));
         }
@@ -65,6 +66,9 @@ public sealed class Brain
         SystemActivity.Movie => BehaviorKind.Watching,
         SystemActivity.Coding => BehaviorKind.Coding,
         SystemActivity.AgentRunning => BehaviorKind.AgentBusy,
+        SystemActivity.AgentWaitingForInput => BehaviorKind.AgentWaiting,
+        SystemActivity.AgentSucceeded => BehaviorKind.AgentSucceeded,
+        SystemActivity.AgentFailed => BehaviorKind.AgentFailed,
         _ => BehaviorKind.Idle,
     };
 
@@ -129,6 +133,7 @@ public sealed class Brain
         [BehaviorKind.Signature] = 28,
         [BehaviorKind.Grooving] = 18, [BehaviorKind.Watching] = 22,
         [BehaviorKind.Coding] = 18, [BehaviorKind.AgentBusy] = 12,
+        [BehaviorKind.AgentWaiting] = 15, [BehaviorKind.AgentSucceeded] = 20, [BehaviorKind.AgentFailed] = 20,
         [BehaviorKind.Searching] = 50,
     };
 
@@ -269,6 +274,9 @@ public sealed class Brain
             (BehaviorKind.Watching, SystemActivity == SystemActivity.Movie ? 1.0f * f : 0f),
             (BehaviorKind.Coding, SystemActivity == SystemActivity.Coding ? 0.9f * f : 0f),
             (BehaviorKind.AgentBusy, SystemActivity == SystemActivity.AgentRunning ? 1.3f * f : 0f),
+            (BehaviorKind.AgentWaiting, SystemActivity == SystemActivity.AgentWaitingForInput ? 1.3f * f : 0f),
+            (BehaviorKind.AgentSucceeded, SystemActivity == SystemActivity.AgentSucceeded ? 1.5f * f : 0f),
+            (BehaviorKind.AgentFailed, SystemActivity == SystemActivity.AgentFailed ? 1.5f * f : 0f),
             (BehaviorKind.Searching, CompanionsPresent <= 1 ? 0.6f * f : 0f),
         };
 
@@ -314,6 +322,9 @@ public sealed class Brain
         BehaviorKind.Watching => new ClipBehavior(k, Clips.Watching, 0.4f),
         BehaviorKind.Coding => new ClipBehavior(k, Clips.Coding, 0.4f),
         BehaviorKind.AgentBusy => new ClipBehavior(k, Clips.AgentBusy, 0.25f),
+        BehaviorKind.AgentWaiting => new AgentWaitingBehavior(),
+        BehaviorKind.AgentSucceeded => new ClipBehavior(k, Clips.AgentSucceeded, 0.25f),
+        BehaviorKind.AgentFailed => new ClipBehavior(k, Clips.AgentFailed, 0.25f),
         BehaviorKind.Searching => new ClipBehavior(k, Clips.Searching, 0.4f),
         BehaviorKind.Declined => new ClipBehavior(k, Clips.Declined, 0.3f),
         BehaviorKind.WatchingMovie => new WatchingMovieBehavior(),

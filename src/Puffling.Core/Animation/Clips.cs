@@ -48,6 +48,9 @@ public static class Clips
     public static readonly IClip Watching = new WatchingClip();
     public static readonly IClip Coding = new CodingClip();
     public static readonly IClip AgentBusy = new AgentBusyClip();
+    public static readonly IClip AgentWaiting = new AgentWaitingClip();
+    public static readonly IClip AgentSucceeded = new AgentSucceededClip();
+    public static readonly IClip AgentFailed = new AgentFailedClip();
     public static readonly IClip Searching = new SearchingClip();
     public static readonly IClip Declined = new DeclinedClip();
     private static readonly IClip RedMove = new SignatureClip(CompanionVariant.Red);
@@ -510,6 +513,72 @@ public static class Clips
             p.TentacleAmplitude = 0.4f; p.TentacleSpeed = 9f; p.TentacleSpread = 0.3f;
             p.GoggleWiggle = 0.35f * MathF.Sin(t * 10f);
             p.Particles = ParticleKind.Sparkles;
+            return p;
+        }
+    }
+
+    /// <summary>Ambient reaction while an agent lifecycle event reports it's waiting on the user:
+    /// restless, glancing around rather than at the screen.</summary>
+    private sealed class AgentWaitingClip : IClip
+    {
+        public string Name => "Impatient";
+        public float? Duration => 4.0f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            p.Expression = Expression.Curious;
+            float sweep = MathF.Sin(t * 2.2f);
+            p.LookX = sweep * 0.8f;
+            p.LookY = 0.1f;
+            p.Yaw = 0.12f * sweep;
+            p.Pitch = 0.08f;
+            // A little foot-tap substitute: quicker, tighter tentacle taps than the usual sway.
+            p.TentacleAmplitude = 0.18f + 0.1f * Hop(t, 6f);
+            p.TentacleSpeed = 5f; p.TentacleSpread = 0.05f;
+            p.GoggleWiggle = -0.15f * MathF.Sin(t * 3.5f);
+            return p;
+        }
+    }
+
+    /// <summary>One-off celebration when an agent lifecycle event reports success: a bigger,
+    /// bouncier triumph than the everyday Happy clip.</summary>
+    private sealed class AgentSucceededClip : IClip
+    {
+        public string Name => "Celebrating";
+        public float? Duration => 2.0f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            float env = Decay(t, 1.0f);
+            p.Expression = Expression.Excited;
+            p.OffsetY = -6f * Hop(t, 8f) * env;
+            p.OffsetX = 2f * MathF.Sin(t * 8f) * env;
+            p.Squash = 1f + 0.14f * MathF.Sin(t * 16f) * env;
+            p.Roll = 0.18f * MathF.Sin(t * 8f) * env;
+            p.TentacleAmplitude = 0.6f; p.TentacleSpeed = 11f; p.TentacleSpread = 0.4f;
+            p.GoggleWiggle = 0.5f * MathF.Sin(t * 14f) * env;
+            p.Particles = ParticleKind.Sparkles;
+            return p;
+        }
+    }
+
+    /// <summary>One-off reaction when an agent lifecycle event reports failure: a puzzled
+    /// head-tilt and a small deflating squash — not real distress.</summary>
+    private sealed class AgentFailedClip : IClip
+    {
+        public string Name => "Puzzled";
+        public float? Duration => 2.2f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            float env = Decay(t, 1.2f);
+            p.Expression = Expression.Curious;
+            p.Roll = 0.2f * MathF.Sin(t * 2.5f) * env - 0.05f;
+            p.Pitch = 0.1f * MathF.Min(1f, t * 3f);
+            p.Squash = 1f - 0.05f * env;
+            p.LookX = 0.4f * MathF.Sin(t * 1.8f);
+            p.TentacleAmplitude = 0.1f; p.TentacleSpeed = 1.5f; p.TentacleSpread = -0.05f;
+            p.GoggleWiggle = -0.1f * MathF.Sin(t * 2f);
             return p;
         }
     }

@@ -291,6 +291,9 @@ public sealed class CompanionApp : NativeWindow, IDisposable
         SystemActivity.Movie => "Shh... movie time.",
         SystemActivity.Coding => "In the zone, coding.",
         SystemActivity.AgentRunning => "An agent is busy at work.",
+        SystemActivity.AgentWaitingForInput => "The agent is waiting on you.",
+        SystemActivity.AgentSucceeded => "The agent finished up nicely!",
+        SystemActivity.AgentFailed => "Hmm, the agent hit a snag.",
         _ => "",
     };
 

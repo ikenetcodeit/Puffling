@@ -198,11 +198,18 @@ notifications. Eligibility already excludes paused/asleep/cross-monitor/mid-acti
   cross-monitor move at the exact seam where two monitors' margin-deflated safe areas touch —
   both now exempt `WatchingMovie`, which validates its own path with `Geometry.PathIsVisible`.
 
-- [ ] **39. Distinguish AI-agent lifecycle states.** `AgentBusy` is currently a single ambient
-  pose for "some agent process is running." Expand `SystemActivity.AgentRunning` into distinct
-  idle/running/waiting-for-input/succeeded/failed signals wherever a reliable integration exists
-  (explicit lifecycle events, not inferred from a terminal merely being open), with matching
-  clips: supervising, impatient (green wandering off), celebrating on success, puzzled on failure.
+- [x] **39. Distinguish AI-agent lifecycle states.** `SystemActivity` now has `AgentIdle`,
+  `AgentWaitingForInput`, `AgentSucceeded`, and `AgentFailed` alongside the existing `AgentRunning`,
+  each with its own clip and `BehaviorKind` (`AgentWaiting`/`AgentSucceeded`/`AgentFailed`; `idle`
+  plays no special pose). Green's bolder temperament means it sometimes gives up waiting and
+  wanders off instead of holding the impatient pose (`AgentWaitingBehavior`); other variants just
+  wait it out. No tool in this repo invents a fake integration to drive the richer states — instead
+  `docs/agent-lifecycle.md` documents a small, tool-agnostic JSON file
+  (`%LOCALAPPDATA%\Puffling\agent-lifecycle.json`) any external script or CLI wrapper can write,
+  parsed by `Puffling.Core.Behavior.AgentLifecycle` (a required, freshness-checked `updatedAt` keeps
+  a crashed script from sticking a reaction forever) and read by
+  `Puffling.App.Platform.SystemActivityDetector`, which still falls back to the coarse
+  process-presence guess (`AgentRunning` only) whenever the file is absent, stale, or malformed.
 - [ ] **40. React to Windows toast notifications.** Distinct from Puffling's own bubbles (item 24
   covers a history of those): have a nearby, available Puffling glance toward a real incoming
   Windows notification via the supported notification-listener APIs, occasionally with a subtle

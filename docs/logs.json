@@ -114,6 +114,10 @@
     {
       "date": "2026-11-04",
       "summary": "Made autonomous cross-display travel actually happen: RandomFarPoint now biases its random destination toward a monitor other than the current one (still path-validated, so it never aims through a real gap), TravelBehavior sizes its timeout to the actual distance so a long hop isn't cut off mid-flight, and Travel now gets the same ReturningBehavior/ScreenEdgeCollision exemptions WatchingMovie needed, since both safety nets could otherwise undo a crossing in progress at a monitor seam. Completed ROADMAP 2."
+    },
+    {
+      "date": "2026-11-04",
+      "summary": "Distinguished AI-agent lifecycle states: SystemActivity gained AgentIdle/AgentWaitingForInput/AgentSucceeded/AgentFailed alongside AgentRunning, each with its own clip (impatient, celebrating, puzzled) and BehaviorKind; Green sometimes wanders off instead of waiting it out (AgentWaitingBehavior). Documented a tool-agnostic JSON lifecycle file (docs/agent-lifecycle.md, %LOCALAPPDATA%\\Puffling\\agent-lifecycle.json) any external script can write, parsed by the new Puffling.Core.Behavior.AgentLifecycle (required, freshness-checked updatedAt) and read by SystemActivityDetector, which falls back to the existing coarse process-presence guess when the file is absent, stale, or malformed. Completed ROADMAP 39."
     }
   ]
 }

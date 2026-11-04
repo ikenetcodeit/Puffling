@@ -22,6 +22,7 @@ public static class RenderingTests
         Clips.GroupGame(GroupGameKind.Chase, 0), Clips.GroupGame(GroupGameKind.Spar, 1),
         Clips.GroupGame(GroupGameKind.Pong, 2),
         Clips.Grooving, Clips.Watching, Clips.Coding, Clips.AgentBusy, Clips.Searching, Clips.Declined,
+        Clips.AgentWaiting, Clips.AgentSucceeded, Clips.AgentFailed,
     };
 
     [Test]
@@ -347,6 +348,44 @@ public static class SettingsTests
     }
 }
 
+public static class AgentLifecycleTests
+{
+    private static string Json(string state, DateTimeOffset updatedAt) =>
+        $$"""{"state":"{{state}}","updatedAt":"{{updatedAt:O}}"}""";
+
+    [Test]
+    public static void TryParse_MapsEveryRecognizedState()
+    {
+        var now = DateTimeOffset.UtcNow;
+        Assert.Equal(SystemActivity.AgentIdle, AgentLifecycle.TryParse(Json("idle", now), now), "idle");
+        Assert.Equal(SystemActivity.AgentRunning, AgentLifecycle.TryParse(Json("running", now), now), "running");
+        Assert.Equal(SystemActivity.AgentWaitingForInput, AgentLifecycle.TryParse(Json("waitingForInput", now), now), "waitingForInput");
+        Assert.Equal(SystemActivity.AgentSucceeded, AgentLifecycle.TryParse(Json("succeeded", now), now), "succeeded");
+        Assert.Equal(SystemActivity.AgentFailed, AgentLifecycle.TryParse(Json("failed", now), now), "failed");
+    }
+
+    [Test]
+    public static void TryParse_RejectsMalformedOrUnrecognizedInput()
+    {
+        var now = DateTimeOffset.UtcNow;
+        Assert.True(AgentLifecycle.TryParse("{ not json", now) is null, "malformed JSON");
+        Assert.True(AgentLifecycle.TryParse("{}", now) is null, "missing state");
+        Assert.True(AgentLifecycle.TryParse(Json("whatever", now), now) is null, "unrecognized state");
+        Assert.True(AgentLifecycle.TryParse("""{"state":"running"}""", now) is null, "missing updatedAt");
+        Assert.True(AgentLifecycle.TryParse("""{"state":"running","updatedAt":"not a date"}""", now) is null, "unparsable updatedAt");
+    }
+
+    [Test]
+    public static void TryParse_RejectsAStaleEvent_SoACrashedScriptCannotStickForever()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var fresh = Json("succeeded", now - AgentLifecycle.MaxAge + TimeSpan.FromSeconds(1));
+        var stale = Json("succeeded", now - AgentLifecycle.MaxAge - TimeSpan.FromSeconds(1));
+        Assert.Equal(SystemActivity.AgentSucceeded, AgentLifecycle.TryParse(fresh, now), "fresh");
+        Assert.True(AgentLifecycle.TryParse(stale, now) is null, "older than MaxAge falls back to the coarse heuristic");
+    }
+}
+
 public static class BehaviorTests
 {
     internal static ScreenGeometry ThreeMonitors() => new(new[]
@@ -458,6 +497,62 @@ public static class BehaviorTests
         c.Brain.SystemActivity = SystemActivity.None;
         Run(c, 10f, new(5, 5), 0);
         Assert.True(c.CurrentBehavior != BehaviorKind.AgentBusy, "stops once the activity clears");
+    }
+
+    [Test]
+    public static void SystemActivity_AgentLifecycle_PlaysMatchingReaction_ForEachState()
+    {
+        var g = ScreenGeometry.Single(1920, 1080);
+        foreach (var (activity, kind) in new[]
+        {
+            (SystemActivity.AgentWaitingForInput, BehaviorKind.AgentWaiting),
+            (SystemActivity.AgentSucceeded, BehaviorKind.AgentSucceeded),
+            (SystemActivity.AgentFailed, BehaviorKind.AgentFailed),
+        })
+        {
+            var c = new Companion(new CompanionSettings(), g, seed: 7, CompanionVariant.Red);
+            Run(c, 9f, new(5, 5), 0); // settle into Idle
+            c.Brain.SystemActivity = activity;
+            Assert.Equal(kind, c.CurrentBehavior, $"{activity} reacts right away while free to be interrupted");
+
+            c.Brain.SystemActivity = SystemActivity.None;
+            Run(c, 10f, new(5, 5), 0);
+            Assert.True(c.CurrentBehavior != kind, $"{activity} reaction stops once the activity clears");
+        }
+    }
+
+    [Test]
+    public static void SystemActivity_AgentIdle_DoesNotInterruptOrChurnTheCurrentIdle()
+    {
+        var c = new Companion(new CompanionSettings(), ScreenGeometry.Single(1920, 1080), seed: 7);
+        Run(c, 1f, new(5, 5), 0);
+        Assert.Equal(BehaviorKind.Idle, c.CurrentBehavior, "idle before reacting");
+
+        c.Brain.SystemActivity = SystemActivity.AgentIdle;
+        Assert.Equal(BehaviorKind.Idle, c.CurrentBehavior, "agent-idle is not noteworthy, unlike running/waiting/succeeded/failed");
+    }
+
+    [Test]
+    public static void SystemActivity_AgentWaitingForInput_GreenSometimesWandersOff_OthersHoldStill()
+    {
+        var g = ScreenGeometry.Single(1920, 1080);
+        int greenWandered = 0, redWandered = 0;
+        const int trials = 24;
+        for (int i = 0; i < trials; i++)
+        {
+            var green = new Companion(new CompanionSettings { LastX = 960, LastY = 540 }, g, seed: 2000 + i, CompanionVariant.Green);
+            green.Brain.SystemActivity = SystemActivity.AgentWaitingForInput;
+            Run(green, 2f, new(-9000, -9000), 20);
+            if (Vector2.Distance(green.Position, new Vector2(960, 540)) > 15f) greenWandered++;
+
+            var red = new Companion(new CompanionSettings { LastX = 960, LastY = 540 }, g, seed: 2000 + i, CompanionVariant.Red);
+            red.Brain.SystemActivity = SystemActivity.AgentWaitingForInput;
+            Run(red, 2f, new(-9000, -9000), 20);
+            if (Vector2.Distance(red.Position, new Vector2(960, 540)) > 15f) redWandered++;
+        }
+        Assert.True(greenWandered > 0, "green sometimes wanders off while waiting");
+        Assert.True(greenWandered < trials, "green doesn't always wander off while waiting");
+        Assert.Equal(0, redWandered, "red just holds the impatient pose rather than wandering off");
     }
 
     [Test]

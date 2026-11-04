@@ -116,6 +116,11 @@ public static class FullscreenDetector
 /// foreground window title, so Puffling can react. Deliberately a coarse, best-effort heuristic:
 /// an unrecognized app simply yields <see cref="SystemActivity.None"/> rather than a wrong guess.
 /// Reads only process/window names, never file contents or network activity.
+///
+/// The one exception is <see cref="LifecycleFilePath"/>: if a script or CLI wrapper reports a
+/// real agent lifecycle event there (see docs/agent-lifecycle.md), that explicit signal is used
+/// as-is instead of the coarse process guess, since it's strictly more reliable. Nothing in this
+/// repo writes that file yet — it's a documented protocol for external tools to opt into.
 /// </summary>
 public static class SystemActivityDetector
 {
@@ -131,8 +136,13 @@ public static class SystemActivityDetector
     private static readonly string[] MovieTitleHints =
         { "youtube", "netflix", "twitch", "prime video", "disney+", "- vlc media player" };
 
+    public static readonly string LifecycleFilePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Puffling", "agent-lifecycle.json");
+
     public static SystemActivity Detect()
     {
+        if (ReadLifecycleFile() is { } fromFile) return fromFile;
+
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var process in Process.GetProcesses())
             using (process) names.Add(process.ProcessName);
@@ -148,6 +158,19 @@ public static class SystemActivityDetector
             return SystemActivity.Movie;
         if (names.Overlaps(MusicProcesses)) return SystemActivity.Music;
         return SystemActivity.None;
+    }
+
+    /// <summary>Returns the lifecycle file's reported state, or null if it's absent, unreadable,
+    /// malformed, or stale — in which case the caller falls back to the coarse process guess.</summary>
+    private static SystemActivity? ReadLifecycleFile()
+    {
+        try
+        {
+            if (!File.Exists(LifecycleFilePath)) return null;
+            return AgentLifecycle.TryParse(File.ReadAllText(LifecycleFilePath));
+        }
+        catch (IOException) { return null; }
+        catch (UnauthorizedAccessException) { return null; }
     }
 
     private static string ForegroundTitle()

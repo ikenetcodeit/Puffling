@@ -11,6 +11,7 @@ public enum BehaviorKind
     Follow, ComeHere, Drowsy, Sleeping, Waking, Returning, Dragged, Settling,
     PairPlay, TrioPlay, GroupChase, GroupSpar, GroupPong, GroupStare, Signature,
     Grooving, Watching, Coding, AgentBusy, Searching, Declined, WatchingMovie,
+    AgentWaiting, AgentSucceeded, AgentFailed,
 }
 
 public static class BehaviorKinds
@@ -344,6 +345,39 @@ public sealed class WatchingMovieBehavior : Behavior
         b.LookOverride = null;
         b.Motion.Release(b.Speed(170));
     }
+}
+
+/// <summary>
+/// Ambient reaction while an agent lifecycle event reports it's waiting on the user. Most
+/// variants just hold the impatient pose a while; Green's bolder, more restless temperament means
+/// it sometimes gives up on waiting and wanders off a short distance instead, rather than holding
+/// still — the "green wandering off" beat the roadmap calls for.
+/// </summary>
+public sealed class AgentWaitingBehavior : Behavior
+{
+    public override BehaviorKind Kind => BehaviorKind.AgentWaiting;
+    private bool _wanderedOff;
+    private float _duration;
+
+    public override void Enter(Brain b)
+    {
+        _wanderedOff = b.Variant == CompanionVariant.Green && b.CanMove && b.Rng.NextDouble() < 0.5;
+        if (_wanderedOff)
+        {
+            var p = b.AvoidVideo(b.Geometry.RandomPointNear(b.Motion.Position, 60 * b.DpiScale, 220 * b.DpiScale, b.Margin, b.Rng));
+            b.Motion.MoveTo(p, b.Speed(55) * b.Variant.WanderSpeed(), b.Speed(70));
+            b.Animator.Play(Clips.Travel, 0.4f);
+            _duration = 8f;
+        }
+        else
+        {
+            b.Motion.Release(b.Speed(40));
+            b.Animator.Play(Clips.AgentWaiting, 0.3f);
+            _duration = b.RandomRange(4f, 7f);
+        }
+    }
+
+    public override bool Update(Brain b, float dt) => _wanderedOff ? !b.Motion.Arrived && Elapsed < _duration : Elapsed < _duration;
 }
 
 public sealed class AffectionateBehavior : Behavior
