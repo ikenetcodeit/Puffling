@@ -86,6 +86,10 @@
     {
       "date": "2026-11-04",
       "summary": "Updated the AGENTS.md running-instance rule to also start the app back up after build/test, so stopping it to test doesn't leave the user without their companion."
+    },
+    {
+      "date": "2026-11-04",
+      "summary": "Shrank the oversized speech bubble (300x82 -> 220x64, less padding) and dropped the pixel font back to 10pt to match Windows Terminal's default size."
     }
   ]
 }

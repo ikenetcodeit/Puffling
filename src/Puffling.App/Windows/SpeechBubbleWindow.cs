@@ -21,16 +21,16 @@ public sealed class SpeechBubbleWindow : NativeWindow, IDisposable
         _brush = CreateSolidBrush(Background);
         EnsureClass(ClassName, 0, LoadCursorW(IntPtr.Zero, IDC_ARROW), _brush);
         uint dpi = GetDpiForSystem();
-        _width = 300 * (int)dpi / 96;
-        _height = 82 * (int)dpi / 96;
+        _width = 220 * (int)dpi / 96;
+        _height = 64 * (int)dpi / 96;
         Create(ClassName, "Puffling reminder", WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW | (topmost ? WS_EX_TOPMOST : 0),
             WS_POPUP, 0, 0, _width, _height, owner);
-        IntPtr region = CreateRoundRectRgn(0, 0, _width, _height, 18 * (int)dpi / 96, 18 * (int)dpi / 96);
+        IntPtr region = CreateRoundRectRgn(0, 0, _width, _height, 14 * (int)dpi / 96, 14 * (int)dpi / 96);
         if (!SetWindowRgn(Handle, region, true)) DeleteObject(region);
         // Windows' built-in bitmap "Terminal" font, drawn without antialiasing (quality 3 =
         // NONANTIALIASED_QUALITY, charset 255 = OEM_CHARSET) for a pixelated notification look.
-        _font = CreateFontW(-(12 * (int)dpi / 72), 0, 0, 0, 400, 0, 0, 0, 255, 0, 0, 3, 1, "Terminal");
-        int pad = 16 * (int)dpi / 96;
+        _font = CreateFontW(-(10 * (int)dpi / 72), 0, 0, 0, 400, 0, 0, 0, 255, 0, 0, 3, 1, "Terminal");
+        int pad = 10 * (int)dpi / 96;
         _label = CreateWindowExW(0, "STATIC", "", WS_CHILD | WS_VISIBLE | SS_LEFT,
             pad, pad, _width - 2 * pad, _height - 2 * pad, Handle, IntPtr.Zero, Instance, IntPtr.Zero);
         SendMessageW(_label, WM_SETFONT, _font, (IntPtr)1);
