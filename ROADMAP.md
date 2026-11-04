@@ -29,6 +29,17 @@ reprioritized.
   heuristics live in `Puffling.App.Platform.SystemActivityDetector` and are intentionally coarse
   and extensible — add process names rather than new detection machinery when covering a new app.
 
+- [x] **34. Make group play rare and personality-shaped.** The full-roster routine (everyone
+  dances/chases/spars/plays pong together) now fires every 3-5 minutes instead of every ~45
+  seconds, so it reads as a surprise rather than a loop that flattens each Puffling's identity.
+  With all three present, a separate "duo" routine (dance, chase, or a staring contest) picks two
+  of the three on a shorter, ~70-150 second cadence, leaving the third to wander on its own. The
+  pair is weighted by temperament — red and blue (the composed leader and the bubbly one) pair up
+  most, red occasionally draws green in, and blue and green pair up least, so green mostly does
+  its own thing. Alone, a Puffling eventually plays a one-off "looking for someone" clip
+  (`BehaviorKind.Searching`); it never fires with company around
+  (`Brain.CompanionsPresent`). See `GroupInteractionCoordinator`.
+
 ## Milestone 3 — Presentation
 
 - [x] **5. Fix README GIF frame smearing.** Every README GIF, including pair and trio previews,

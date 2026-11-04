@@ -29,7 +29,7 @@ Puffling has more to do than float in one spot. It can wander, travel between mo
 
 ### Bring a couple of friends
 
-Right-click a ghast or the tray icon and choose **Spawn another**. You can have **up to three** on screen at once. Each one wanders and reacts on its own. When they share a monitor, they occasionally meet for a little performance or game:
+Right-click a ghast or the tray icon and choose **Spawn another**. You can have **up to three** on screen at once. Each one wanders and reacts on its own, and group moments are kept rare on purpose — a few minutes apart — so they read as a little surprise instead of a loop. When they share a monitor, they occasionally meet for a performance or game:
 
 | Two ghasts: a mirrored, heart-filled flyby | Three ghasts: a tiny musical carousel |
 | :---: | :---: |
@@ -40,6 +40,8 @@ Right-click a ghast or the tray icon and choose **Spawn another**. You can have 
 | <img src="docs/previews/happy-ghast/chase.gif" alt="Three Pufflings chasing in a loop" width="220"> | <img src="docs/previews/happy-ghast/spar.gif" alt="Two Pufflings bouncing toward and away from each other" width="220"> | <img src="docs/previews/happy-ghast/pong.gif" alt="A green Puffling bouncing between red and blue Pufflings" width="220"> |
 
 The **red** Puffling is composed and curious, the **blue** one is bubbly and playful, and the **green** one is bold and quick. Their harness colors, faces, idle pace, wandering, and reactions reflect those temperaments. Each has its own move in the right-click menu: *Lead a rally*, *Do a twirl*, or *Show a dash*. Their looks stay with their roster positions after restart. Click or drag one and the whole group gives way to you. Right-click a specific ghast for **Remove this Puffling**, or use **Remove newest** in the tray menu. Puffling remembers how many you had and where they were after restart.
+
+With all three around, red and blue gravitate toward each other most for a quick chase or a staring contest, red occasionally draws green into one too, and green mostly keeps to itself — every so often leaving just two of the three in a little moment while the third wanders off on its own. Leave a Puffling on its own for a while and it eventually glances around, looking for its friends.
 
 | Pet me | Pick me up | Off I go |
 | :---: | :---: | :---: |

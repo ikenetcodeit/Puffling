@@ -70,6 +70,10 @@
     {
       "date": "2026-11-04",
       "summary": "Added ambient reactions to detected music, video, coding, and coding-agent activity (Grooving/Watching/Coding/AgentBusy clips and Brain.SystemActivity), a pixelated-font notification bubble, and a roadmap milestone of further interaction and animation ideas; completed ROADMAP 4."
+    },
+    {
+      "date": "2026-11-04",
+      "summary": "Made group play rare (every 3-5 min) and personality-shaped: a shorter, separate duo routine (dance/chase/staring contest) now pairs two of three Pufflings by temperament affinity (red-blue most, red-green sometimes, blue-green least), and a lone Puffling eventually plays a one-off 'looking for someone' clip; completed ROADMAP 34."
     }
   ]
 }

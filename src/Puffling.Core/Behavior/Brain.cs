@@ -68,6 +68,11 @@ public sealed class Brain
         _ => BehaviorKind.Idle,
     };
 
+    /// <summary>How many companions (including this one) are currently visible, set by the host
+    /// app each frame. Drives the solo "looking for someone" reaction — it never fires with
+    /// company around.</summary>
+    public int CompanionsPresent { get; set; } = 1;
+
     /// <summary>Raised when the brain changes a persisted setting itself (e.g. waking leaves sleep mode).</summary>
     public event Action? SettingsMutated;
     public event Action<BehaviorKind>? BehaviorChanged;
@@ -85,6 +90,7 @@ public sealed class Brain
         [BehaviorKind.Signature] = 28,
         [BehaviorKind.Grooving] = 18, [BehaviorKind.Watching] = 22,
         [BehaviorKind.Coding] = 18, [BehaviorKind.AgentBusy] = 12,
+        [BehaviorKind.Searching] = 50,
     };
 
     public Brain(Motion motion, Animator animator, ScreenGeometry geometry, CompanionSettings settings, Random rng,
@@ -216,6 +222,7 @@ public sealed class Brain
             (BehaviorKind.Watching, SystemActivity == SystemActivity.Movie ? 1.0f * f : 0f),
             (BehaviorKind.Coding, SystemActivity == SystemActivity.Coding ? 0.9f * f : 0f),
             (BehaviorKind.AgentBusy, SystemActivity == SystemActivity.AgentRunning ? 1.3f * f : 0f),
+            (BehaviorKind.Searching, CompanionsPresent <= 1 ? 0.6f * f : 0f),
         };
 
         float total = 0;
@@ -260,6 +267,7 @@ public sealed class Brain
         BehaviorKind.Watching => new ClipBehavior(k, Clips.Watching, 0.4f),
         BehaviorKind.Coding => new ClipBehavior(k, Clips.Coding, 0.4f),
         BehaviorKind.AgentBusy => new ClipBehavior(k, Clips.AgentBusy, 0.25f),
+        BehaviorKind.Searching => new ClipBehavior(k, Clips.Searching, 0.4f),
         _ => new IdleBehavior(),
     };
 

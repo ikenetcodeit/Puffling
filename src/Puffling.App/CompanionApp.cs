@@ -169,6 +169,7 @@ public sealed class CompanionApp : NativeWindow, IDisposable
         foreach (var instance in _companions)
         {
             if (instance.HiddenForFullscreen) continue;
+            instance.Pet.Brain.CompanionsPresent = _visiblePets.Count;
             instance.Pet.Tick(dt, input);
             var r = instance.Pet.Render();
             instance.Window.Present(r.Frame, r.Left, r.Top);

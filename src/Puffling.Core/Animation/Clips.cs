@@ -26,7 +26,7 @@ public interface IClip
     Pose Evaluate(float t, in ClipContext c);
 }
 
-public enum GroupGameKind { Chase, Spar, Pong }
+public enum GroupGameKind { Chase, Spar, Pong, Stare }
 
 public static class Clips
 {
@@ -48,6 +48,7 @@ public static class Clips
     public static readonly IClip Watching = new WatchingClip();
     public static readonly IClip Coding = new CodingClip();
     public static readonly IClip AgentBusy = new AgentBusyClip();
+    public static readonly IClip Searching = new SearchingClip();
     private static readonly IClip RedMove = new SignatureClip(CompanionVariant.Red);
     private static readonly IClip BlueMove = new SignatureClip(CompanionVariant.Blue);
     private static readonly IClip GreenMove = new SignatureClip(CompanionVariant.Green);
@@ -114,6 +115,18 @@ public static class Clips
         public Pose Evaluate(float t, in ClipContext c)
         {
             var p = Pose.Rest;
+            if (kind == GroupGameKind.Stare)
+            {
+                // A silly staring contest: both hold still and blink in sync, then "lose"
+                // together and burst into giggles near the end.
+                bool blinking = MathF.Sin(t * 0.9f + slot * 1.3f) > 0.88f;
+                p.Expression = t > 6.5f ? Expression.Happy : blinking ? Expression.Blink : Expression.Neutral;
+                p.LookX = c.LookDir.X;
+                p.LookY = -c.LookDir.Y;
+                p.TentacleAmplitude = 0.05f; p.TentacleSpeed = 1f;
+                p.Particles = t > 6.5f ? ParticleKind.Sparkles : ParticleKind.None;
+                return p;
+            }
             p.Expression = kind == GroupGameKind.Pong ? Expression.Curious : Expression.Excited;
             p.LookX = c.LookDir.X;
             p.LookY = -c.LookDir.Y;
@@ -496,6 +509,26 @@ public static class Clips
             p.TentacleAmplitude = 0.4f; p.TentacleSpeed = 9f; p.TentacleSpread = 0.3f;
             p.GoggleWiggle = 0.35f * MathF.Sin(t * 10f);
             p.Particles = ParticleKind.Sparkles;
+            return p;
+        }
+    }
+
+    /// <summary>Solo reaction for when no other Puffling is around: a little search for company.</summary>
+    private sealed class SearchingClip : IClip
+    {
+        public string Name => "Searching";
+        public float? Duration => 5.0f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            p.Expression = t < 3.6f ? Expression.Curious : Expression.Sleepy;
+            float sweep = MathF.Sin(t * 1.6f);
+            p.Yaw = 0.3f * sweep;
+            p.LookX = sweep;
+            p.LookY = -0.15f;
+            p.Pitch = 0.05f * MathF.Sin(t * 0.9f);
+            p.TentacleAmplitude = 0.14f; p.TentacleSpeed = 2.4f;
+            p.GoggleWiggle = 0.2f * MathF.Sin(t * 2f);
             return p;
         }
     }

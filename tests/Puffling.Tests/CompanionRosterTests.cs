@@ -18,7 +18,7 @@ public static class CompanionRosterTests
         var pair = MakePets(geometry, 2);
         var pairCoordinator = new GroupInteractionCoordinator();
         pairCoordinator.Tick(0, pair);
-        pairCoordinator.Tick(8, pair);
+        pairCoordinator.Tick(65, pair); // well past the (randomized, 20-60s) initial delay
         Assert.True(pair.All(p => p.CurrentBehavior == BehaviorKind.PairPlay), "two pets begin the pair routine together");
         Assert.True(pair.All(p => p.Animator.Clip.Name == "Pair play"), "pair has its own clip");
         Assert.True(pair.All(p => p.Animator.Clip.Evaluate(0.5f, default).Particles == ParticleKind.Hearts), "pair shows hearts");
@@ -28,7 +28,7 @@ public static class CompanionRosterTests
         var trio = MakePets(geometry, 3);
         var trioCoordinator = new GroupInteractionCoordinator();
         trioCoordinator.Tick(0, trio);
-        trioCoordinator.Tick(8, trio);
+        trioCoordinator.Tick(65, trio);
         Assert.True(trio.All(p => p.CurrentBehavior == BehaviorKind.TrioPlay), "three pets begin the carousel together");
         Assert.True(trio.All(p => p.Animator.Clip.Name == "Trio carousel"), "trio has its own clip");
         Assert.True(trio.All(p => p.Animator.Clip.Evaluate(0.5f, default).Particles == ParticleKind.Notes), "trio shows notes");
@@ -151,9 +151,13 @@ public static class CompanionRosterTests
                 ? new[] { BehaviorKind.PairPlay, BehaviorKind.GroupChase, BehaviorKind.GroupSpar }
                 : new[] { BehaviorKind.TrioPlay, BehaviorKind.GroupChase, BehaviorKind.GroupSpar, BehaviorKind.GroupPong };
             coordinator.Tick(0, pets);
+            // Full-group routines are now deliberately rare (every 3-5 min); step well past the
+            // maximum interval each time so the "full" branch always wins over a trio's duo routine.
+            const double step = 310;
             for (int routine = 0; routine < expected.Length; routine++)
             {
-                coordinator.Tick(8 + routine * 60, pets);
+                double t = step * (routine + 1);
+                coordinator.Tick(t, pets);
                 Assert.True(pets.All(p => p.CurrentBehavior == expected[routine]), $"routine {routine} starts together");
                 for (int frame = 0; frame < 80; frame++)
                 {
@@ -165,7 +169,7 @@ public static class CompanionRosterTests
                     }
                 }
                 pets[0].Execute(CompanionCommand.Happy);
-                coordinator.Tick(8.1 + routine * 60, pets);
+                coordinator.Tick(t + 0.1, pets);
                 Assert.True(pets.Skip(1).All(p => p.CurrentBehavior == BehaviorKind.Idle),
                     $"{expected[routine]} yields to direct attention");
                 foreach (var pet in pets) pet.Brain.Interrupt(new IdleBehavior());
@@ -217,5 +221,62 @@ public static class CompanionRosterTests
         first.Execute(CompanionCommand.Dance);
         Assert.Equal(BehaviorKind.Dance, first.CurrentBehavior, "selected companion dances");
         Assert.Equal(BehaviorKind.Idle, second.CurrentBehavior, "other companion keeps its own behavior");
+    }
+
+    [Test]
+    public static void Alone_EventuallyLooksForCompany_ButNotWhenOthersArePresent()
+    {
+        var geometry = ScreenGeometry.Single(1920, 1080);
+        var c = new Companion(new CompanionSettings(), geometry, seed: 20);
+        c.Brain.CompanionsPresent = 1;
+        bool searched = false;
+        for (int i = 0; i < 30 * 90 && !searched; i++)
+        {
+            c.Tick(1 / 30f, new FrameInputs(new Vector2(5, 5), 0));
+            searched = c.CurrentBehavior == BehaviorKind.Searching;
+        }
+        Assert.True(searched, "an alone Puffling eventually looks for company");
+
+        var withCompany = new Companion(new CompanionSettings(), geometry, seed: 21);
+        withCompany.Brain.CompanionsPresent = 3;
+        bool everSearched = false;
+        for (int i = 0; i < 30 * 90; i++)
+        {
+            withCompany.Tick(1 / 30f, new FrameInputs(new Vector2(5, 5), 0));
+            if (withCompany.CurrentBehavior == BehaviorKind.Searching) everSearched = true;
+        }
+        Assert.True(!everSearched, "never looks for company while others are present");
+    }
+
+    [Test]
+    public static void TrioDuoRoutine_ExcludesTheThird_AndFavorsRedAndBlue()
+    {
+        var geometry = ScreenGeometry.Single(1920, 1080);
+        var trio = MakePets(geometry, 3); // [0]=Red, [1]=Blue, [2]=Green
+        var coordinator = new GroupInteractionCoordinator(seed: 7);
+        coordinator.Tick(0, trio);
+
+        var pairCounts = new Dictionary<(CompanionVariant, CompanionVariant), int>();
+        double now = 0;
+        for (int i = 0; i < 40; i++)
+        {
+            now += 65; // land on the (shorter) duo cadence well before the rare full-trio one
+            coordinator.Tick(now, trio);
+            var engaged = trio.Where(p => p.CurrentBehavior is BehaviorKind.PairPlay or
+                BehaviorKind.GroupChase or BehaviorKind.GroupStare).ToArray();
+            if (engaged.Length == 2)
+            {
+                var variants = engaged.Select(p => p.Variant).OrderBy(v => v).ToArray();
+                var key = (variants[0], variants[1]);
+                pairCounts[key] = pairCounts.GetValueOrDefault(key) + 1;
+                Assert.Equal(1, trio.Length - engaged.Length, "exactly one Puffling sits this one out");
+            }
+            foreach (var pet in trio) pet.Brain.Interrupt(new IdleBehavior());
+        }
+
+        int redBlue = pairCounts.GetValueOrDefault((CompanionVariant.Red, CompanionVariant.Blue));
+        int blueGreen = pairCounts.GetValueOrDefault((CompanionVariant.Blue, CompanionVariant.Green));
+        Assert.True(redBlue > 0, "red and blue pair up at least once");
+        Assert.True(redBlue > blueGreen, "red and blue gravitate to each other more than blue and green");
     }
 }

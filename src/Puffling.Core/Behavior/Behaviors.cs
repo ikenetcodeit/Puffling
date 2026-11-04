@@ -8,8 +8,8 @@ public enum BehaviorKind
 {
     Idle, Wander, Travel, Curious, Happy, Excited, Surprised, Dance, Affectionate,
     Follow, ComeHere, Drowsy, Sleeping, Waking, Returning, Dragged, Settling,
-    PairPlay, TrioPlay, GroupChase, GroupSpar, GroupPong, Signature,
-    Grooving, Watching, Coding, AgentBusy,
+    PairPlay, TrioPlay, GroupChase, GroupSpar, GroupPong, GroupStare, Signature,
+    Grooving, Watching, Coding, AgentBusy, Searching,
 }
 
 /// <summary>
@@ -209,13 +209,15 @@ public sealed class GroupGameBehavior : Behavior
     {
         GroupGameKind.Chase => BehaviorKind.GroupChase,
         GroupGameKind.Spar => BehaviorKind.GroupSpar,
+        GroupGameKind.Stare => BehaviorKind.GroupStare,
         _ => BehaviorKind.GroupPong,
     };
     public override bool Interruptible => false;
 
     public GroupGameBehavior(Vector2 centre, int slot, int count, float radius, GroupGameKind game)
     {
-        if (count is not (2 or 3) || slot < 0 || slot >= count || (game == GroupGameKind.Pong && count != 3))
+        if (count is not (2 or 3) || slot < 0 || slot >= count || (game == GroupGameKind.Pong && count != 3) ||
+            (game == GroupGameKind.Stare && count != 2))
             throw new ArgumentOutOfRangeException(nameof(slot));
         _centre = centre; _slot = slot; _count = count; _radius = radius; _game = game;
     }
@@ -239,6 +241,12 @@ public sealed class GroupGameBehavior : Behavior
                 float distance = _radius * (0.50f + 0.50f * Hop(t * 3.4f + _slot * 0.4f));
                 offset = new Vector2(distance * MathF.Cos(a), distance * 0.6f * MathF.Sin(a));
                 speed = 125;
+                break;
+            case GroupGameKind.Stare:
+                // Hold still, facing each other at close range.
+                float side = _slot == 0 ? -1f : 1f;
+                offset = new Vector2(side * _radius * 0.42f, 0f);
+                speed = 45;
                 break;
             default: // Three-pet pong: the third pet is the ball between two bobbing paddles.
                 float ballY = _radius * 0.36f * MathF.Sin(t * 1.8f);
