@@ -43,6 +43,14 @@ public sealed class CompanionSettings
     public int CompanionCount { get; set; } = 1;
     public List<SavedCompanionPosition> AdditionalPositions { get; set; } = new();
 
+    /// <summary>Remembered resting spot in physical px, set the first time this companion falls
+    /// asleep and preferred thereafter (validated against monitors at startup, like LastX/LastY).
+    /// Slot 0's spot; slots 1+ are <see cref="AdditionalFavoriteSpots"/>, index-aligned with
+    /// <see cref="AdditionalPositions"/> (a missing/short entry just means "no favorite spot yet").</summary>
+    public float? FavoriteX { get; set; }
+    public float? FavoriteY { get; set; }
+    public List<SavedCompanionPosition?> AdditionalFavoriteSpots { get; set; } = new();
+
     public int SettingsVersion { get; set; } = 1;
 
     public CompanionSettings Normalize()
@@ -62,6 +70,12 @@ public sealed class CompanionSettings
         AdditionalPositions = AdditionalPositions
             .Where(p => float.IsFinite(p.X) && float.IsFinite(p.Y))
             .Take(MaxCompanions - 1).ToList();
+        if (FavoriteX is { } fx && !float.IsFinite(fx)) FavoriteX = null;
+        if (FavoriteY is { } fy && !float.IsFinite(fy)) FavoriteY = null;
+        AdditionalFavoriteSpots ??= new();
+        AdditionalFavoriteSpots = AdditionalFavoriteSpots
+            .Select(p => p is { } v && float.IsFinite(v.X) && float.IsFinite(v.Y) ? p : null)
+            .Take(MaxCompanions - 1).ToList();
         return this;
     }
 
@@ -72,6 +86,7 @@ public sealed class CompanionSettings
     {
         var clone = (CompanionSettings)MemberwiseClone();
         clone.AdditionalPositions = new List<SavedCompanionPosition>(AdditionalPositions ?? new());
+        clone.AdditionalFavoriteSpots = new List<SavedCompanionPosition?>(AdditionalFavoriteSpots ?? new());
         return clone;
     }
 

@@ -59,6 +59,7 @@ public sealed class CompanionApp : NativeWindow, IDisposable
     private readonly List<CompanionInstance> _companions = new();
     private readonly List<Companion> _visiblePets = new(CompanionSettings.MaxCompanions);
     private readonly GroupInteractionCoordinator _groupInteractions = new();
+    private readonly EnvironmentalInteractionCoordinator _environmentalInteractions = new();
     private readonly TrayIcon _tray;
     private readonly SpeechBubbleWindow _bubble;
     private readonly ConcurrentQueue<Action> _uiWork = new();
@@ -136,6 +137,11 @@ public sealed class CompanionApp : NativeWindow, IDisposable
             x = p.X; y = p.Y;
         }
         own.LastX = x; own.LastY = y;
+        int rosterSlot = _companions.Count;
+        SavedCompanionPosition? favorite = rosterSlot == 0
+            ? (_settings.FavoriteX is { } fx && _settings.FavoriteY is { } fy ? new SavedCompanionPosition(fx, fy) : null)
+            : (rosterSlot - 1 < _settings.AdditionalFavoriteSpots.Count ? _settings.AdditionalFavoriteSpots[rosterSlot - 1] : null);
+        own.FavoriteX = favorite?.X; own.FavoriteY = favorite?.Y;
         var instance = new CompanionInstance(Handle, own, geometry, Now, (slot, px, py) => ShowContextMenu(px, py, slot),
             CompanionVariants.ForSlot(_companions.Count));
         instance.Pet.Brain.SettingsMutated += () =>
@@ -166,6 +172,7 @@ public sealed class CompanionApp : NativeWindow, IDisposable
         foreach (var instance in _companions)
             if (!instance.HiddenForFullscreen) _visiblePets.Add(instance.Pet);
         _groupInteractions.Tick(now, _visiblePets);
+        _environmentalInteractions.Tick(now, _visiblePets);
         foreach (var instance in _companions)
         {
             if (instance.HiddenForFullscreen) continue;
@@ -423,6 +430,12 @@ public sealed class CompanionApp : NativeWindow, IDisposable
             _settings.CompanionCount = _companions.Count;
             _settings.AdditionalPositions = _companions.Skip(1)
                 .Select(c => new SavedCompanionPosition(c.Pet.Position.X, c.Pet.Position.Y)).ToList();
+            var primaryFavorite = Primary.Pet.Brain.FavoriteSpot;
+            _settings.FavoriteX = primaryFavorite?.X;
+            _settings.FavoriteY = primaryFavorite?.Y;
+            _settings.AdditionalFavoriteSpots = _companions.Skip(1)
+                .Select(c => c.Pet.Brain.FavoriteSpot is { } f ? new SavedCompanionPosition(f.X, f.Y) : (SavedCompanionPosition?)null)
+                .ToList();
             _store.Save(_settings);
             foreach (var instance in _companions) instance.LastSavedPosition = instance.Pet.Position;
             _settingsDirty = false;

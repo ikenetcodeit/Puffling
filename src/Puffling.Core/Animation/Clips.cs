@@ -62,6 +62,9 @@ public static class Clips
     public static readonly IClip Admiring = new AdmiringClip();
     public static readonly IClip Checking = new CheckingClip();
     public static readonly IClip Challenging = new ChallengingClip();
+    public static readonly IClip WatchingSleep = new WatchingSleepClip();
+    public static readonly IClip Stumble = new StumbleClip();
+    public static readonly IClip InspectingIcon = new InspectingIconClip();
     private static readonly IClip RedMove = new SignatureClip(CompanionVariant.Red);
     private static readonly IClip BlueMove = new SignatureClip(CompanionVariant.Blue);
     private static readonly IClip GreenMove = new SignatureClip(CompanionVariant.Green);
@@ -804,6 +807,61 @@ public static class Clips
             p.Pitch = -0.1f * puff;
             p.TentacleAmplitude = 0.3f * puff; p.TentacleSpeed = 3f; p.TentacleSpread = 0.4f * puff;
             p.GoggleWiggle = 0.1f * MathF.Sin(t * 5f) * puff;
+            return p;
+        }
+    }
+
+    /// <summary>A nearby companion pausing to fondly watch another one sleep.</summary>
+    private sealed class WatchingSleepClip : IClip
+    {
+        public string Name => "Watching Sleep";
+        public float? Duration => null;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            p.Expression = Expression.Happy;
+            p.LookX = c.LookDir.X; p.LookY = -c.LookDir.Y;
+            p.Pitch = 0.06f;
+            p.BobAmplitude = 1f; p.BobSpeed = 1.4f;
+            p.TentacleAmplitude = 0.08f; p.TentacleSpeed = 1.2f;
+            return p;
+        }
+    }
+
+    /// <summary>A rare, brief loss of footing — a quick squash and off-balance roll, then straight
+    /// back to normal.</summary>
+    private sealed class StumbleClip : IClip
+    {
+        public string Name => "Stumble";
+        public float? Duration => 1.3f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            p.Expression = Expression.Surprised;
+            float side = c.Variation > 0.5f ? 1f : -1f;
+            p.Roll = side * 0.22f * Decay(t, 3.5f) * MathF.Sin(t * 10f);
+            p.Squash = t < 0.1f ? 0.85f : 1f + 0.1f * Decay(t - 0.1f, 4f);
+            p.OffsetY = 2.5f * Decay(t, 3f);
+            p.TentacleSpread = 0.3f * Decay(t, 3f);
+            p.GoggleWiggle = 0.3f * Decay(t, 3f) * MathF.Sin(t * 18f);
+            return p;
+        }
+    }
+
+    /// <summary>Peering closely at a found desktop icon, without activating anything.</summary>
+    private sealed class InspectingIconClip : IClip
+    {
+        public string Name => "Inspecting an icon";
+        public float? Duration => 3.4f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            p.Expression = Expression.Curious;
+            p.Pitch = 0.18f;
+            p.LookY = 0.5f;
+            p.LookX = 0.15f * MathF.Sin(t * 1.6f);
+            p.TentacleAmplitude = 0.08f; p.TentacleSpeed = 1.4f;
+            p.GoggleWiggle = 0.12f * MathF.Sin(t * 2.5f);
             return p;
         }
     }

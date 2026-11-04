@@ -26,6 +26,7 @@ public static class RenderingTests
         Clips.Shy, Clips.Hovering, Clips.Mischievous,
         Clips.Humming, Clips.Inspecting, Clips.Aloof,
         Clips.Admiring, Clips.Checking, Clips.Challenging,
+        Clips.WatchingSleep, Clips.Stumble, Clips.InspectingIcon,
     };
 
     [Test]
@@ -436,6 +437,36 @@ public static class BehaviorTests
     }
 
     [Test]
+    public static void Sleepy_PrefersItsRememberedFavoriteSpot_OverWhereItHappensToBe()
+    {
+        var g = ScreenGeometry.Single(1920, 1080);
+        var favorite = new Vector2(1500, 800);
+        var settings = new CompanionSettings { LastX = 200, LastY = 200, FavoriteX = favorite.X, FavoriteY = favorite.Y, SleepMode = true };
+        var c = new Companion(settings, g, seed: 60);
+        Assert.Equal(favorite, c.Brain.FavoriteSpot!.Value, "favorite spot hydrated from settings");
+
+        bool sawResting = false;
+        for (int i = 0; i < 30 * 60 && c.CurrentBehavior != BehaviorKind.Sleeping; i++)
+        {
+            c.Tick(1 / 30f, new FrameInputs(new Vector2(-9000, -9000), 0));
+            if (c.CurrentBehavior == BehaviorKind.Resting) sawResting = true;
+        }
+        Assert.True(sawResting, "travels to its favorite spot before settling down");
+        Assert.Equal(BehaviorKind.Sleeping, c.CurrentBehavior, "eventually falls asleep");
+        Assert.True(Vector2.Distance(c.Position, favorite) < 10f, $"falls asleep near its favorite spot, at {c.Position}");
+    }
+
+    [Test]
+    public static void NeverSleptBefore_FallsAsleepWhereverItIs_AndRemembersThatSpot()
+    {
+        var c = new Companion(new CompanionSettings { SleepMode = true, LastX = 400, LastY = 300 }, ScreenGeometry.Single(1920, 1080), seed: 61);
+        Assert.True(c.Brain.FavoriteSpot is null, "no favorite spot recorded yet");
+        Run(c, 30f, new(-9000, -9000), 0);
+        Assert.Equal(BehaviorKind.Sleeping, c.CurrentBehavior, "falls asleep");
+        Assert.True(c.Brain.FavoriteSpot is { } fs && Vector2.Distance(fs, c.Position) < 1f, "remembers where it first fell asleep");
+    }
+
+    [Test]
     public static void Drag_MovesPet_ThenSettles_AndReturnsOnScreen()
     {
         var c = new Companion(new CompanionSettings(), ScreenGeometry.Single(1920, 1080), seed: 5);
@@ -512,6 +543,40 @@ public static class BehaviorTests
             }
             Assert.True(mine.All(seen.Contains), $"{variant} never played all of its own idle flourishes within 30 simulated minutes");
         }
+    }
+
+    [Test]
+    public static void Wandering_RarelyStumbles_AndAlwaysRecovers()
+    {
+        var c = new Companion(new CompanionSettings { ActivityFrequency = 2f }, ScreenGeometry.Single(1920, 1080), seed: 70);
+        bool sawStumble = false;
+        for (int i = 0; i < 30 * 60 * 30 && !sawStumble; i++)
+        {
+            c.Tick(1 / 30f, new FrameInputs(new Vector2(-9000, -9000), 0));
+            if (c.CurrentBehavior == BehaviorKind.Stumble) sawStumble = true;
+        }
+        Assert.True(sawStumble, "never stumbled within 25 simulated minutes of wandering");
+        // Recovery: it doesn't get stuck in the stumble pose once the clip finishes.
+        Run(c, 5f, new(-9000, -9000), 0);
+        Assert.True(c.CurrentBehavior != BehaviorKind.Stumble, "recovers from the stumble on its own");
+    }
+
+    [Test]
+    public static void EventuallyInspectsADesktopIcon_WithoutLeavingTheMonitor()
+    {
+        var g = ScreenGeometry.Single(1920, 1080);
+        var c = new Companion(new CompanionSettings { ActivityFrequency = 2f }, g, seed: 71);
+        bool sawInspecting = false;
+        for (int i = 0; i < 30 * 60 * 20 && !sawInspecting; i++)
+        {
+            c.Tick(1 / 30f, new FrameInputs(new Vector2(-9000, -9000), 0));
+            if (c.CurrentBehavior == BehaviorKind.InspectingIcon)
+            {
+                sawInspecting = true;
+                Assert.True(g.IsComfortablyVisible(c.Position, c.Brain.Margin), $"stays on-screen while inspecting, at {c.Position}");
+            }
+        }
+        Assert.True(sawInspecting, "never inspected a desktop icon within 20 simulated minutes");
     }
 
     [Test]
@@ -660,10 +725,13 @@ public static class BehaviorTests
                 cursor = g.NearestSafePoint(cursor + cursorVel * dt, 0);
             }
 
-            // Occasional direct interactions at the pet.
+            // Occasional direct interactions at the pet. Unlike the others, the plain click isn't
+            // gated on `!away`: sleep is strongly correlated with "away" (idling accelerates
+            // sleepiness), so a user briefly checking on/waking a sleeping pet needs to be possible
+            // during an away stretch too, or a click can never actually land during a sleep window.
             double roll = rng.NextDouble();
             var p = c.Position;
-            if (!away && roll < 0.0006) { c.Pointer.PointerDown(p, t); c.Pointer.PointerUp(p, t + 0.05); }
+            if (roll < 0.0006) { c.Pointer.PointerDown(p, t); c.Pointer.PointerUp(p, t + 0.05); }
             else if (!away && roll < 0.0008) { userDance = true; c.Pointer.PointerDown(p, t); c.Pointer.PointerUp(p, t + 0.05); c.Pointer.DoubleClick(p, t + 0.1); c.Pointer.PointerUp(p, t + 0.15); }
             else if (!away && roll < 0.0010)
             {

@@ -134,6 +134,10 @@
     {
       "date": "2026-11-04",
       "summary": "Added the third and final handful of per-variant idle flourishes, completing ROADMAP 41: Blue briefly admiring something, Red checking on everyone, and Green's challenging pose. All nine flourishes named in the roadmap's example list are now in place. Bumped the simulated window in Alone_EventuallyLooksForCompany's test since Searching is now one of more competing idle-weighted options than before."
+    },
+    {
+      "date": "2026-11-04",
+      "summary": "Completed ROADMAP 42 (environmental/emergent behaviors): a companion now remembers a favorite resting spot (persisted like position) and heads there before sleeping; a new EnvironmentalInteractionCoordinator lets one companion occasionally visit another's favorite spot or pause to watch it sleep; Wander can rarely trip-and-recover; and InspectingIconBehavior approximates the OS's default icon-grid spacing to peer at a plausible icon without real Shell interop. Fixed a real bug along the way: the generic off-screen safety net was hijacking a cross-monitor Resting trip mid-transit (same bug class as item 38), which was the actual reason the 2-hour soak test stopped seeing Waking at all; Resting/VisitingFavoriteSpot are now path-validated and exempted the same way Travel/WatchingMovie are. Also fixed the soak test's click roll being gated on '!away' when sleep is strongly correlated with being away, so a wake-up click could never land during the window it was actually needed."
     }
   ]
 }

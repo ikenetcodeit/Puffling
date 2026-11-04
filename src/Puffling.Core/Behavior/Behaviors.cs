@@ -15,6 +15,7 @@ public enum BehaviorKind
     Shy, Hovering, Mischievous,
     Humming, Inspecting, Aloof,
     Admiring, Checking, Challenging,
+    Resting, VisitingFavoriteSpot, WatchingSleep, Stumble, InspectingIcon,
 }
 
 public static class BehaviorKinds
@@ -454,9 +455,111 @@ public sealed class SleepingBehavior : Behavior
         _duration = b.RandomRange(90f, 240f);
         b.Motion.Release(b.Speed(40));
         b.Animator.Play(Clips.Sleeping, 1.2f);
+        // The first time it falls asleep, wherever that happens to be becomes its favorite spot —
+        // TryRestBeforeSleep then prefers heading back there next time, instead of sleeping
+        // wherever sleepiness happened to catch up with it.
+        b.FavoriteSpot ??= b.Motion.Position;
     }
     public override bool Update(Brain b, float dt) => b.Settings.SleepMode || Elapsed < _duration;
     public override void Exit(Brain b) => b.Sleepiness = 0f;
+}
+
+/// <summary>Travels to an arbitrary remembered spot — a companion's own favorite spot before
+/// settling down to sleep (<see cref="Brain.FavoriteSpot"/>), or another companion's, when
+/// visiting. The <see cref="Kind"/> passed in distinguishes the two for tests/eligibility even
+/// though the motion itself is identical.</summary>
+public sealed class GoToSpotBehavior(Vector2 target, BehaviorKind kind) : Behavior
+{
+    private float _timeout;
+    public override BehaviorKind Kind => kind;
+    public override void Enter(Brain b)
+    {
+        float speed = b.Speed(120) * b.Variant.WanderSpeed();
+        b.Motion.MoveTo(target, speed, b.Speed(90));
+        b.Animator.Play(Clips.Travel, 0.5f);
+        _timeout = Math.Max(20f, Vector2.Distance(b.Motion.Position, target) / Math.Max(1f, speed) * 1.5f + 5f);
+    }
+    public override bool Update(Brain b, float dt) => !b.Motion.Arrived && Elapsed < _timeout;
+}
+
+/// <summary>A nearby, awake companion pausing to watch another one sleep — a quiet, fond gaze,
+/// no movement of its own, ending on its own after a short while or the moment the sleeper wakes.</summary>
+public sealed class WatchingSleepBehavior(Companion sleeper) : Behavior
+{
+    private float _duration;
+    public override BehaviorKind Kind => BehaviorKind.WatchingSleep;
+    public override void Enter(Brain b)
+    {
+        _duration = b.RandomRange(3f, 6f);
+        b.Motion.Release(b.Speed(80));
+        b.Animator.Play(Clips.WatchingSleep, 0.4f);
+    }
+    public override bool Update(Brain b, float dt)
+    {
+        if (sleeper.CurrentBehavior != BehaviorKind.Sleeping) return false; // they woke up
+        Vector2 toward = sleeper.Position - b.Motion.Position;
+        b.LookOverride = toward.LengthSquared() > 1 ? Vector2.Normalize(toward) : Vector2.Zero;
+        return Elapsed < _duration;
+    }
+    public override void Exit(Brain b) => b.LookOverride = null;
+}
+
+/// <summary>A rare, brief loss of footing mid-wander — a quick off-balance wobble, then straight
+/// back to normal. Never interrupts a deliberate cross-monitor Travel, only casual Wander.</summary>
+public sealed class StumbleBehavior : Behavior
+{
+    public override BehaviorKind Kind => BehaviorKind.Stumble;
+    public override void Enter(Brain b)
+    {
+        b.Motion.Velocity *= 0.25f;
+        b.Animator.Play(Clips.Stumble, 0.08f);
+    }
+    public override bool Update(Brain b, float dt) => !b.Animator.ClipFinished;
+}
+
+/// <summary>
+/// Wanders over to a plausible desktop-icon-grid cell and peers at it without "activating"
+/// anything. Approximates the OS's default icon spacing rather than reading the real Shell icon
+/// layout — real icon positions need cross-process Shell interop
+/// (<c>SysListView32</c> inside <c>explorer.exe</c>), a much larger feature on its own; this reads
+/// as "found something to look at" without it.
+/// </summary>
+public sealed class InspectingIconBehavior : Behavior
+{
+    public override BehaviorKind Kind => BehaviorKind.InspectingIcon;
+    private bool _arrived;
+    private float _arrivedAt, _lookDuration;
+
+    public override void Enter(Brain b)
+    {
+        var target = b.AvoidVideo(NearestIconGridPoint(b));
+        b.Motion.MoveTo(target, b.Speed(90) * b.Variant.WanderSpeed(), b.Speed(100));
+        b.Animator.Play(Clips.Travel, 0.4f);
+    }
+
+    public override bool Update(Brain b, float dt)
+    {
+        if (!_arrived)
+        {
+            if (!b.Motion.Arrived && Elapsed < 15f) return true;
+            _arrived = true;
+            _arrivedAt = Elapsed;
+            _lookDuration = b.RandomRange(2.2f, 3.5f);
+            b.Motion.Release(b.Speed(60));
+            b.Animator.Play(Clips.InspectingIcon, 0.3f);
+        }
+        return Elapsed < _arrivedAt + _lookDuration;
+    }
+
+    private static Vector2 NearestIconGridPoint(Brain b)
+    {
+        const float cellLogical = 96f;
+        var area = b.Geometry.MonitorAt(b.Motion.Position).WorkArea.Deflate(b.Margin);
+        float spacing = cellLogical * b.DpiScale;
+        float col = MathF.Round((b.Motion.Position.X - area.Left) / spacing) + b.Rng.Next(-2, 3);
+        float row = MathF.Round((b.Motion.Position.Y - area.Top) / spacing) + b.Rng.Next(-1, 2);
+        return area.Clamp(new Vector2(area.Left + col * spacing, area.Top + row * spacing));
+    }
 }
 
 public sealed class ReturningBehavior : Behavior

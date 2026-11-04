@@ -252,11 +252,33 @@ notifications. Eligibility already excludes paused/asleep/cross-monitor/mid-acti
   since it's now one of more competing idle-weighted options than before — not a behavior change,
   just more things that can happen first. The full living design spec may still have smaller beats
   not reproduced here; revisit if it becomes a priority again.
-- [ ] **42. More environmental/emergent behaviors.** From the spec's list, still open: resting
-  preferentially at a remembered favorite spot, occasionally visiting another Puffling's favorite
-  spot, inspecting a desktop icon without activating it, a rare trip-and-recover stumble, and a
-  companion reacting to watching another one sleep. (Watching the cursor and reacting to a
-  disconnected monitor already exist via `CuriousBehavior` and `UpdateGeometry`.)
+- [x] **42. More environmental/emergent behaviors.** All five from the spec's list are in:
+  - **Favorite spot.** The first time a companion falls asleep, wherever that happens becomes its
+    `Brain.FavoriteSpot`, persisted the same way position is (`CompanionSettings.FavoriteX/Y` and
+    `AdditionalFavoriteSpots`, index-aligned with `AdditionalPositions`). Next time it's about to
+    rest, it heads there first (`BehaviorKind.Resting`/`GoToSpotBehavior`) instead of settling down
+    wherever sleepiness happened to catch up with it — path-validated
+    (`Geometry.PathIsVisible`) and exempted from the generic off-screen safety net the same way
+    `Travel`/`WatchingMovie` are, since fixing a genuine bug here (the safety net was hijacking a
+    cross-monitor `Resting` trip mid-transit, same class of bug as item 38) turned out to be the
+    actual reason the 2-hour soak test stopped observing `Waking` at all — see its `Companion.cs`/
+    `Brain.cs` notes.
+  - **Visiting another's favorite spot.** A new `EnvironmentalInteractionCoordinator`, ticked
+    alongside `GroupInteractionCoordinator`, occasionally (every 150-300s) sends one eligible,
+    idle-ish companion to visit another's remembered favorite spot (`BehaviorKind.
+    VisitingFavoriteSpot`), constrained to the same monitor like `GroupInteractionCoordinator.
+    AllEligible` already does for shared routines.
+  - **Inspecting a desktop icon.** `InspectingIconBehavior` approximates the OS's default icon-grid
+    spacing rather than reading the real Shell `SysListView32` layout (a much larger feature on its
+    own — real icon positions need cross-process memory interop into `explorer.exe`) and peers at a
+    plausible nearby grid cell without "activating" anything.
+  - **Trip-and-recover stumble.** A rare (`BehaviorKind.Stumble`), brief off-balance wobble can
+    interrupt casual `Wander` (never a deliberate cross-monitor `Travel`), then recovers on its own.
+  - **Watching another sleep.** The same new coordinator has a nearby, awake, eligible companion
+    pause for a quiet gaze (`BehaviorKind.WatchingSleep`) toward anyone who falls asleep nearby,
+    ending the moment the sleeper wakes.
+  (Watching the cursor and reacting to a disconnected monitor already existed via `CuriousBehavior`
+  and `UpdateGeometry`.)
 
 Items 19 (build/test outcomes), 20 (battery), 21 (gaming detection), 22 (per-personality system-
 activity flavor), and 24 (notification history) in Milestone 5 already cover other parts of this

@@ -62,6 +62,47 @@ public static class CompanionRosterTests
     }
 
     [Test]
+    public static void AwakeCompanion_PausesToWatchAnotherSleep_AndStopsOnceItWakes()
+    {
+        var geometry = ScreenGeometry.Single(1920, 1080);
+        var sleeper = new Companion(new CompanionSettings { LastX = 900, LastY = 500, SleepMode = true }, geometry, 1);
+        var watcher = new Companion(new CompanionSettings { LastX = 950, LastY = 500 }, geometry, 2, CompanionVariant.Blue);
+        var pets = new[] { sleeper, watcher };
+
+        for (int i = 0; i < 30 * 10 && sleeper.CurrentBehavior != BehaviorKind.Sleeping; i++)
+            sleeper.Tick(1 / 30f, new FrameInputs(new Vector2(-9000, -9000), 0));
+        Assert.Equal(BehaviorKind.Sleeping, sleeper.CurrentBehavior, "sleeper falls asleep");
+
+        var coordinator = new EnvironmentalInteractionCoordinator(5);
+        coordinator.Tick(0, pets);
+        Assert.Equal(BehaviorKind.WatchingSleep, watcher.CurrentBehavior, "a nearby awake companion pauses to watch");
+
+        sleeper.Pointer.PointerDown(sleeper.Position, 100); sleeper.Pointer.PointerUp(sleeper.Position, 100.05);
+        sleeper.Tick(1 / 30f, new FrameInputs(new Vector2(-9000, -9000), 0));
+        watcher.Tick(1 / 30f, new FrameInputs(new Vector2(-9000, -9000), 0));
+        Assert.True(watcher.CurrentBehavior != BehaviorKind.WatchingSleep, "stops watching once the sleeper wakes");
+    }
+
+    [Test]
+    public static void EligibleCompanion_OccasionallyVisitsAnothersFavoriteSpot()
+    {
+        var geometry = ScreenGeometry.Single(1920, 1080);
+        var owner = new Companion(new CompanionSettings { LastX = 300, LastY = 300 }, geometry, 10);
+        owner.Brain.FavoriteSpot = new Vector2(1600, 900);
+        var visitor = new Companion(new CompanionSettings { LastX = 900, LastY = 500 }, geometry, 11, CompanionVariant.Blue);
+        var pets = new[] { owner, visitor };
+
+        var coordinator = new EnvironmentalInteractionCoordinator(3);
+        double now = 0;
+        for (int i = 0; i < 20 && visitor.CurrentBehavior != BehaviorKind.VisitingFavoriteSpot; i++)
+        {
+            coordinator.Tick(now, pets);
+            now += 310; // past the longest possible 150-300s window, win or lose this round's coin flip
+        }
+        Assert.Equal(BehaviorKind.VisitingFavoriteSpot, visitor.CurrentBehavior, "visitor heads to the owner's favorite spot");
+    }
+
+    [Test]
     public static void GroupPlay_WaitsWhenPetsAreOnDifferentMonitors()
     {
         var geometry = new ScreenGeometry([
@@ -195,6 +236,27 @@ public static class CompanionRosterTests
         Assert.Equal(2, settings.AdditionalPositions.Count, "cloned positions are independent");
         settings.CompanionCount = -4;
         Assert.Equal(1, settings.Normalize().CompanionCount, "at least one companion");
+    }
+
+    [Test]
+    public static void Settings_SanitizeAndClone_FavoriteSpots()
+    {
+        var settings = new CompanionSettings
+        {
+            FavoriteX = float.NaN, FavoriteY = 400,
+            AdditionalFavoriteSpots =
+            [
+                new SavedCompanionPosition(100, 100), null, new SavedCompanionPosition(float.PositiveInfinity, 300),
+            ]
+        }.Normalize();
+        Assert.True(settings.FavoriteX is null, "non-finite favorite X is dropped");
+        Assert.Equal(2, settings.AdditionalFavoriteSpots.Count, "capped at MaxCompanions - 1 entries");
+        Assert.Equal(new SavedCompanionPosition(100, 100), settings.AdditionalFavoriteSpots[0], "a valid entry survives");
+        Assert.True(settings.AdditionalFavoriteSpots[1] is null, "a non-finite entry becomes null, not dropped (keeps index alignment)");
+
+        var clone = settings.Clone();
+        clone.AdditionalFavoriteSpots.Clear();
+        Assert.Equal(2, settings.AdditionalFavoriteSpots.Count, "cloned favorite spots are independent");
     }
 
     [Test]

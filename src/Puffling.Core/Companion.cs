@@ -54,6 +54,12 @@ public sealed class Companion
         // Saved position might be on a monitor that no longer exists.
         if (!geometry.IsComfortablyVisible(Motion.Position, Brain.Margin))
             Motion.Teleport(geometry.NearestSafePoint(Motion.Position, Brain.Margin));
+
+        if (settings.FavoriteX is { } fx && settings.FavoriteY is { } fy)
+        {
+            var favorite = new Vector2(fx, fy);
+            if (geometry.IsComfortablyVisible(favorite, Brain.Margin)) Brain.FavoriteSpot = favorite;
+        }
     }
 
     public Vector2 Position => Motion.Position;
@@ -80,6 +86,10 @@ public sealed class Companion
         // Merely uncomfortable positions are handled smoothly by the Returning behaviour.
         if (!g.IsOnAnyMonitor(Motion.Position))
             Motion.Teleport(g.NearestSafePoint(Motion.Position, Brain.Margin));
+        // A remembered favorite spot can also lose its monitor; forget it rather than aim a
+        // future Resting/visit at a vanished point — it'll simply be re-learned next time it sleeps.
+        if (Brain.FavoriteSpot is { } fav && !g.IsComfortablyVisible(fav, Brain.Margin))
+            Brain.FavoriteSpot = null;
     }
 
     public void Tick(float dt, in FrameInputs input)

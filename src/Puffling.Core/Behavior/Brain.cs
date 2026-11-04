@@ -42,6 +42,12 @@ public sealed class Brain
     public Vector2? LookOverride;
     public Behavior Current { get; private set; }
 
+    /// <summary>Remembered resting spot in physical px — set the first time this companion falls
+    /// asleep (<see cref="SleepingBehavior"/>) if it doesn't have one yet, hydrated from and
+    /// persisted to settings by the host app the same way position is. Preferred when settling
+    /// down to sleep, and occasionally visited by other companions.</summary>
+    public Vector2? FavoriteSpot;
+
     private SystemActivity _systemActivity;
     /// <summary>What the host app thinks the user is doing right now (set by the App, polled
     /// off the render loop). Changing it reacts immediately if the character is free to be
@@ -138,6 +144,7 @@ public sealed class Brain
         [BehaviorKind.Shy] = 45, [BehaviorKind.Hovering] = 45, [BehaviorKind.Mischievous] = 45,
         [BehaviorKind.Humming] = 45, [BehaviorKind.Inspecting] = 45, [BehaviorKind.Aloof] = 45,
         [BehaviorKind.Admiring] = 45, [BehaviorKind.Checking] = 45, [BehaviorKind.Challenging] = 45,
+        [BehaviorKind.Stumble] = 90, [BehaviorKind.InspectingIcon] = 70,
     };
 
     public Brain(Motion motion, Animator animator, ScreenGeometry geometry, CompanionSettings settings, Random rng,
@@ -183,7 +190,7 @@ public sealed class Brain
             Sleepiness = Math.Min(1.5f, Sleepiness + dt * rate);
         }
 
-        EvaluateContext();
+        EvaluateContext(dt);
 
         Current.Tick(dt);
         if (!Current.Update(this, dt)) Finish();
@@ -192,26 +199,36 @@ public sealed class Brain
         Animator.Update(dt, BuildClipContext());
     }
 
-    private void EvaluateContext()
+    /// <summary>How often, on average, a rare mid-stride trip interrupts Wander/Travel — a very
+    /// low per-second rate so it reads as an occasional stumble, not a stagger.</summary>
+    private const float StumbleRatePerSecond = 0.012f;
+
+    private void EvaluateContext(float dt)
     {
         var k = Current.Kind;
-        // WatchingMovie and Travel deliberately cross monitors themselves (path-validated); the
-        // generic off-screen safety net would otherwise hand them to ReturningBehavior mid-transit
-        // and undo the move right where two monitors' deflated safe areas touch.
+        // WatchingMovie, Travel, Resting, and VisitingFavoriteSpot all deliberately head to a
+        // specific, path-validated point that may be far from where they started; the generic
+        // off-screen safety net would otherwise hand them to ReturningBehavior mid-transit and undo
+        // the move right where two monitors' deflated safe areas touch.
         if (k is BehaviorKind.Dragged or BehaviorKind.Returning or BehaviorKind.Settling
-            or BehaviorKind.WatchingMovie or BehaviorKind.Travel) return;
+            or BehaviorKind.WatchingMovie or BehaviorKind.Travel
+            or BehaviorKind.Resting or BehaviorKind.VisitingFavoriteSpot) return;
 
         if (!Geometry.IsComfortablyVisible(Motion.Position, Margin)) { Interrupt(new ReturningBehavior()); return; }
         if (!Current.Interruptible) return;
 
-        if (Settings.SleepMode && k is not (BehaviorKind.Sleeping or BehaviorKind.Drowsy or BehaviorKind.Waking))
-        { Interrupt(new DrowsyBehavior()); return; }
+        if (Settings.SleepMode && k is not (BehaviorKind.Sleeping or BehaviorKind.Drowsy or BehaviorKind.Waking or BehaviorKind.Resting))
+        { if (!TryRestBeforeSleep()) Interrupt(new DrowsyBehavior()); return; }
 
         if (k == BehaviorKind.Idle)
         {
-            if (Settings.AutoSleep && Sleepiness >= 1f) { Interrupt(new DrowsyBehavior()); return; }
+            if (Settings.AutoSleep && Sleepiness >= 1f) { if (!TryRestBeforeSleep()) Interrupt(new DrowsyBehavior()); return; }
             if (Settings.FollowCursor && CanMove) { Interrupt(new FollowBehavior(indefinite: true)); return; }
         }
+
+        if (k == BehaviorKind.Wander && CanMove && !Motion.Arrived && OffCooldown(BehaviorKind.Stumble)
+            && RandomRange(0, 1) < StumbleRatePerSecond * dt)
+        { Interrupt(new StumbleBehavior()); return; }
 
         if (k is BehaviorKind.Idle or BehaviorKind.Wander or BehaviorKind.Curious)
         {
@@ -254,6 +271,19 @@ public sealed class Brain
     private bool OffCooldown(BehaviorKind k) =>
         !_lastStarted.TryGetValue(k, out var t) || !Cooldowns.TryGetValue(k, out var cd) || Now - t >= cd;
 
+    /// <summary>If there's a remembered favorite spot and it isn't already here, head there first
+    /// instead of settling down wherever sleepiness happened to catch up. Returns false (so the
+    /// caller falls back to going straight to sleep) when there's nothing to go to.</summary>
+    private bool TryRestBeforeSleep()
+    {
+        if (!CanMove || FavoriteSpot is not { } fs || Vector2.DistanceSquared(Motion.Position, fs) < 1600f) return false;
+        // The spot could be on another monitor by now (geometry changed since it was recorded);
+        // only commit to the trip if the straight line there doesn't cross a real gap.
+        if (!Geometry.PathIsVisible(Motion.Position, fs)) return false;
+        Interrupt(new GoToSpotBehavior(fs, BehaviorKind.Resting));
+        return true;
+    }
+
     internal BehaviorKind ChooseNext()
     {
         if (!Geometry.IsComfortablyVisible(Motion.Position, Margin)) return BehaviorKind.Returning;
@@ -290,6 +320,7 @@ public sealed class Brain
             (BehaviorKind.Admiring, Variant == CompanionVariant.Blue ? 0.18f * f : 0f),
             (BehaviorKind.Checking, Variant == CompanionVariant.Red ? 0.18f * f : 0f),
             (BehaviorKind.Challenging, Variant == CompanionVariant.Green ? 0.18f * f : 0f),
+            (BehaviorKind.InspectingIcon, CanMove ? 0.15f * f : 0f),
         };
 
         float total = 0;
@@ -349,6 +380,10 @@ public sealed class Brain
         BehaviorKind.Checking => new ClipBehavior(k, Clips.Checking, 0.4f),
         BehaviorKind.Challenging => new ClipBehavior(k, Clips.Challenging, 0.25f),
         BehaviorKind.WatchingMovie => new WatchingMovieBehavior(),
+        BehaviorKind.InspectingIcon => new InspectingIconBehavior(),
+        // Resting and VisitingFavoriteSpot are always started directly (TryRestBeforeSleep,
+        // EnvironmentalInteractionCoordinator) with an explicit target, same as the group-play
+        // kinds — never autonomously chosen here.
         _ => new IdleBehavior(),
     };
 
