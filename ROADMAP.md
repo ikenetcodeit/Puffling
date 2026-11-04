@@ -11,9 +11,18 @@ reprioritized.
 - [x] **1. Face the direction of travel.** Travel right visibly faces right and travel left
   faces left, with smooth turns on starts, stops, and reversals.
 
-- [ ] **2. Cross between displays autonomously.** Review destination selection, path visibility,
-  and return-to-screen behavior so Pufflings occasionally travel between connected displays
-  without being dragged. Avoid real gaps and keep them in usable screen areas.
+- [x] **2. Cross between displays autonomously.** `TravelBehavior` already picked destinations via
+  `ScreenGeometry.RandomFarPoint`, which validates the straight path with `PathIsVisible` so it
+  never aims through a real gap between monitors — but the random monitor pick made an actual
+  crossing a rare coincidence, and two generic safety nets (`Brain.EvaluateContext`'s
+  `ReturningBehavior` hijack and `ScreenEdgeCollision.Bounce` in `Companion.Tick`) could still fight
+  a crossing in progress at the exact seam where two monitors' deflated safe areas touch, the same
+  class of bug fixed for `WatchingMovie` in item 38. `RandomFarPoint` now spends most of its
+  attempts targeting a monitor other than the current one before falling back to any monitor, so
+  cross-display travel happens occasionally on its own rather than by chance. `TravelBehavior` now
+  sizes its timeout to the actual distance so a long cross-monitor hop isn't cut off mid-flight, and
+  both `Travel` exemptions mirror `WatchingMovie`'s in `EvaluateContext` and `Companion.Tick`. See
+  the new `BehaviorTests.Travel_OccasionallyCrossesToAnotherMonitor_WithoutDriftingThroughTheGap`.
 
 ## Milestone 2 — Pet behavior
 

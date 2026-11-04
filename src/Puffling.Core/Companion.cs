@@ -101,9 +101,9 @@ public sealed class Companion
         if (Settings.Paused) return;
         Animator.Intensity = Settings.AnimationIntensity;
         Brain.Tick(dt);
-        // A dragged pet is glued to the cursor, and WatchingMovie deliberately crosses monitors
-        // itself (path-validated) — bouncing either would fight the intended motion.
-        if (Brain.Current.Kind is not (BehaviorKind.Dragged or BehaviorKind.WatchingMovie))
+        // A dragged pet is glued to the cursor, and WatchingMovie/Travel deliberately cross
+        // monitors themselves (path-validated) — bouncing any of them would fight the intended motion.
+        if (Brain.Current.Kind is not (BehaviorKind.Dragged or BehaviorKind.WatchingMovie or BehaviorKind.Travel))
             ScreenEdgeCollision.Bounce(Motion, Geometry, Brain.Margin);
     }
 

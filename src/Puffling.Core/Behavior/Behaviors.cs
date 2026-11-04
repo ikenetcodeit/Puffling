@@ -84,14 +84,21 @@ public sealed class WanderBehavior : Behavior
 
 public sealed class TravelBehavior : Behavior
 {
+    private float _timeout;
     public override BehaviorKind Kind => BehaviorKind.Travel;
     public override void Enter(Brain b)
     {
-        var p = b.AvoidVideo(b.Geometry.RandomFarPoint(b.Motion.Position, 320 * b.DpiScale, b.Margin, b.Rng));
-        b.Motion.MoveTo(p, b.Speed(165) * b.Variant.WanderSpeed(), b.Speed(120));
+        var from = b.Motion.Position;
+        var p = b.AvoidVideo(b.Geometry.RandomFarPoint(from, 320 * b.DpiScale, b.Margin, b.Rng));
+        float speed = b.Speed(165) * b.Variant.WanderSpeed();
+        b.Motion.MoveTo(p, speed, b.Speed(120));
         b.Animator.Play(Clips.Travel, 0.6f);
+        // A cross-monitor hop can be much farther than a same-screen stroll; size the timeout to
+        // the actual distance so it has time to arrive instead of being cut off mid-flight and
+        // handed to ReturningBehavior right as it crosses a display seam.
+        _timeout = Math.Max(30f, Vector2.Distance(from, p) / Math.Max(1f, speed) * 1.5f + 5f);
     }
-    public override bool Update(Brain b, float dt) => !b.Motion.Arrived && Elapsed < 30f;
+    public override bool Update(Brain b, float dt) => !b.Motion.Arrived && Elapsed < _timeout;
 }
 
 public sealed class CuriousBehavior : Behavior

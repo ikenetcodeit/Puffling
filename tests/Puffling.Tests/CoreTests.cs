@@ -428,6 +428,24 @@ public static class BehaviorTests
     }
 
     [Test]
+    public static void Travel_OccasionallyCrossesToAnotherMonitor_WithoutDriftingThroughTheGap()
+    {
+        var g = ThreeMonitors();
+        var c = new Companion(new CompanionSettings { LastX = 900, LastY = 500, ActivityFrequency = 2f }, g, seed: 11);
+        var startMonitor = g.MonitorAt(c.Position).Id;
+        bool crossed = false;
+        for (int i = 0; i < 30 * 600 && !crossed; i++)
+        {
+            c.Tick(1 / 30f, new FrameInputs(new Vector2(-9000, -9000), 20));
+            // While deliberately travelling, the pet must never be caught in a real gap between
+            // monitors (ReturningBehavior/ScreenEdgeCollision must not fight a validated crossing).
+            if (c.CurrentBehavior == BehaviorKind.Travel) Assert.True(g.IsOnAnyMonitor(c.Position), $"left all monitors mid-travel at {c.Position}");
+            if (g.MonitorAt(c.Position).Id != startMonitor) crossed = true;
+        }
+        Assert.True(crossed, "never travelled to another monitor within 10 simulated minutes");
+    }
+
+    [Test]
     public static void SystemActivity_ReactsImmediatelyWhenIdle_AndClearsBackToIdle()
     {
         var c = new Companion(new CompanionSettings(), ScreenGeometry.Single(1920, 1080), seed: 7);

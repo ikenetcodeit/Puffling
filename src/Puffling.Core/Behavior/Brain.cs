@@ -187,10 +187,11 @@ public sealed class Brain
     private void EvaluateContext()
     {
         var k = Current.Kind;
-        // WatchingMovie deliberately crosses monitors itself (path-validated); the generic
-        // off-screen safety net would otherwise hand it to ReturningBehavior mid-transit and
-        // undo the move right where two monitors' deflated safe areas touch.
-        if (k is BehaviorKind.Dragged or BehaviorKind.Returning or BehaviorKind.Settling or BehaviorKind.WatchingMovie) return;
+        // WatchingMovie and Travel deliberately cross monitors themselves (path-validated); the
+        // generic off-screen safety net would otherwise hand them to ReturningBehavior mid-transit
+        // and undo the move right where two monitors' deflated safe areas touch.
+        if (k is BehaviorKind.Dragged or BehaviorKind.Returning or BehaviorKind.Settling
+            or BehaviorKind.WatchingMovie or BehaviorKind.Travel) return;
 
         if (!Geometry.IsComfortablyVisible(Motion.Position, Margin)) { Interrupt(new ReturningBehavior()); return; }
         if (!Current.Interruptible) return;

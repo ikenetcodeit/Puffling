@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Numerics;
 
 namespace Puffling.Core.Movement;
@@ -104,9 +105,14 @@ public sealed class ScreenGeometry
     /// <summary>Picks a far destination; may be on another monitor if the straight path stays on-screen.</summary>
     public Vector2 RandomFarPoint(Vector2 from, float minDist, int margin, Random rng)
     {
+        var hereId = MonitorAt(from).Id;
+        var others = _monitors.Length > 1 ? _monitors.Where(m => m.Id != hereId).ToArray() : Array.Empty<MonitorInfo>();
         for (int i = 0; i < 16; i++)
         {
-            var m = Monitors[rng.Next(Monitors.Count)];
+            // Spend most attempts on another monitor first, so travelling between displays happens
+            // occasionally on its own merits rather than only by coincidence of the random pick.
+            var pool = others.Length > 0 && i < 12 ? others : _monitors;
+            var m = pool[rng.Next(pool.Length)];
             var a = m.WorkArea.Deflate(margin);
             var p = new Vector2(a.Left + (float)rng.NextDouble() * a.Width, a.Top + (float)rng.NextDouble() * a.Height);
             if (Vector2.Distance(p, from) >= minDist && PathIsVisible(from, p)) return p;
