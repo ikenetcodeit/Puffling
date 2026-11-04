@@ -40,14 +40,23 @@ reprioritized.
   (`BehaviorKind.Searching`); it never fires with company around
   (`Brain.CompanionsPresent`). See `GroupInteractionCoordinator`.
 
-- [x] **35. Give companions a billiard-ball collision.** Pufflings no longer overlap: every frame,
+- [x] **35. Give companions a collision.** Pufflings no longer overlap: every frame,
   `Puffling.Core.Movement.CompanionCollision` pushes any overlapping pair apart and exchanges the
-  along-normal component of their velocity (equal-mass elastic collision), so flicking one into
-  another gives it a satisfying shove rather than passing through it. A pet being actively dragged
+  along-normal component of their velocity with a soft restitution (0.35, tuned down from a hard
+  billiard-ball swap), so flicking one into another gives it a satisfying but gentle shove rather
+  than passing through it or bouncing off hard. A pet being actively dragged
   is never repositioned by a collision (it stays glued to the cursor) but still shoves whatever it
   hits, using the drag gesture's real velocity rather than its frozen `Motion.Velocity`.
   Choreographed group routines (dance/chase/spar/pong/staring contest) are skipped since those
   already hold pets at deliberate close offsets.
+
+- [x] **36. Bounce instantly off the screen edge.** Free motion (chiefly a post-flick glide) no
+  longer drifts noticeably off-screen before the slower `ReturningBehavior` steers it back. Every
+  frame, `Puffling.Core.Movement.ScreenEdgeCollision` clamps a companion to the nearest safe point
+  the moment it would stop being comfortably visible and reflects the velocity component that
+  caused the overshoot, so it bounces off the edge immediately. Multi-monitor layouts are
+  unaffected — adjacent monitors still read as one continuous safe area, so travelling between
+  displays never counts as "off screen." Dragged pets are exempt (never fight the user's hand).
 
 ## Milestone 3 — Presentation
 

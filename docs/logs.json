@@ -98,6 +98,10 @@
     {
       "date": "2026-11-04",
       "summary": "Softened the companion collision bounce: added a restitution coefficient (0.35) instead of a full elastic velocity swap, so colliding pets settle toward a shared speed rather than bouncing off each other hard."
+    },
+    {
+      "date": "2026-11-04",
+      "summary": "Added an instant screen-edge bounce (ScreenEdgeCollision): a companion is clamped to the nearest safe point and its overshoot velocity reflected the moment it would leave the comfortably-visible area, instead of drifting off-screen until the slower ReturningBehavior caught up. Multi-monitor crossing is unaffected. Completed ROADMAP 36."
     }
   ]
 }

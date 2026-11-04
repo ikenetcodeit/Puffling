@@ -101,6 +101,9 @@ public sealed class Companion
         if (Settings.Paused) return;
         Animator.Intensity = Settings.AnimationIntensity;
         Brain.Tick(dt);
+        // A dragged pet is glued to the cursor; bouncing it would fight the user's hand.
+        if (Brain.Current.Kind != BehaviorKind.Dragged)
+            ScreenEdgeCollision.Bounce(Motion, Geometry, Brain.Margin);
     }
 
     public void Execute(CompanionCommand c) => Brain.Execute(c);

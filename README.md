@@ -43,7 +43,7 @@ The **red** Puffling is composed and curious, the **blue** one is bubbly and pla
 
 With all three around, red and blue gravitate toward each other most for a quick chase or a staring contest, red occasionally draws green into one too, and green mostly keeps to itself — every so often leaving just two of the three in a little moment while the third wanders off on its own. Leave a Puffling on its own for a while and it eventually glances around, looking for its friends.
 
-Pufflings never pass through each other, either. Flick one into another and it gives it a real, billiard-ball shove — handy (and fun) for nudging a friend out of the way or just knocking them around the desktop.
+Pufflings never pass through each other, either. Flick one into another and it gives it a real shove — handy (and fun) for nudging a friend out of the way or just knocking them around the desktop. Flick one toward the edge of your screen and it bounces right back instead of drifting off into the void.
 
 | Pet me | Pick me up | Off I go |
 | :---: | :---: | :---: |
