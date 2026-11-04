@@ -137,6 +137,7 @@ public sealed class Brain
         [BehaviorKind.Searching] = 50,
         [BehaviorKind.Shy] = 45, [BehaviorKind.Hovering] = 45, [BehaviorKind.Mischievous] = 45,
         [BehaviorKind.Humming] = 45, [BehaviorKind.Inspecting] = 45, [BehaviorKind.Aloof] = 45,
+        [BehaviorKind.Admiring] = 45, [BehaviorKind.Checking] = 45, [BehaviorKind.Challenging] = 45,
     };
 
     public Brain(Motion motion, Animator animator, ScreenGeometry geometry, CompanionSettings settings, Random rng,
@@ -286,6 +287,9 @@ public sealed class Brain
             (BehaviorKind.Humming, Variant == CompanionVariant.Blue ? 0.18f * f : 0f),
             (BehaviorKind.Inspecting, Variant == CompanionVariant.Red ? 0.18f * f : 0f),
             (BehaviorKind.Aloof, Variant == CompanionVariant.Green ? 0.18f * f : 0f),
+            (BehaviorKind.Admiring, Variant == CompanionVariant.Blue ? 0.18f * f : 0f),
+            (BehaviorKind.Checking, Variant == CompanionVariant.Red ? 0.18f * f : 0f),
+            (BehaviorKind.Challenging, Variant == CompanionVariant.Green ? 0.18f * f : 0f),
         };
 
         float total = 0;
@@ -341,6 +345,9 @@ public sealed class Brain
         BehaviorKind.Humming => new ClipBehavior(k, Clips.Humming, 0.4f),
         BehaviorKind.Inspecting => new ClipBehavior(k, Clips.Inspecting, 0.4f),
         BehaviorKind.Aloof => new ClipBehavior(k, Clips.Aloof, 0.3f),
+        BehaviorKind.Admiring => new ClipBehavior(k, Clips.Admiring, 0.3f),
+        BehaviorKind.Checking => new ClipBehavior(k, Clips.Checking, 0.4f),
+        BehaviorKind.Challenging => new ClipBehavior(k, Clips.Challenging, 0.25f),
         BehaviorKind.WatchingMovie => new WatchingMovieBehavior(),
         _ => new IdleBehavior(),
     };

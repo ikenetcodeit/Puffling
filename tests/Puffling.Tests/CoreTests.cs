@@ -25,6 +25,7 @@ public static class RenderingTests
         Clips.AgentWaiting, Clips.AgentSucceeded, Clips.AgentFailed,
         Clips.Shy, Clips.Hovering, Clips.Mischievous,
         Clips.Humming, Clips.Inspecting, Clips.Aloof,
+        Clips.Admiring, Clips.Checking, Clips.Challenging,
     };
 
     [Test]
@@ -492,9 +493,9 @@ public static class BehaviorTests
         var g = ScreenGeometry.Single(1920, 1080);
         var own = new Dictionary<CompanionVariant, BehaviorKind[]>
         {
-            [CompanionVariant.Blue] = [BehaviorKind.Shy, BehaviorKind.Humming],
-            [CompanionVariant.Red] = [BehaviorKind.Hovering, BehaviorKind.Inspecting],
-            [CompanionVariant.Green] = [BehaviorKind.Mischievous, BehaviorKind.Aloof],
+            [CompanionVariant.Blue] = [BehaviorKind.Shy, BehaviorKind.Humming, BehaviorKind.Admiring],
+            [CompanionVariant.Red] = [BehaviorKind.Hovering, BehaviorKind.Inspecting, BehaviorKind.Checking],
+            [CompanionVariant.Green] = [BehaviorKind.Mischievous, BehaviorKind.Aloof, BehaviorKind.Challenging],
         };
         var allFlourishes = own.Values.SelectMany(k => k).ToArray();
 
@@ -502,14 +503,14 @@ public static class BehaviorTests
         {
             var c = new Companion(new CompanionSettings { ActivityFrequency = 2f }, g, seed: 55, variant);
             var seen = new HashSet<BehaviorKind>();
-            for (int i = 0; i < 30 * 1200 && !mine.All(seen.Contains); i++)
+            for (int i = 0; i < 30 * 1800 && !mine.All(seen.Contains); i++)
             {
                 c.Tick(1 / 30f, new FrameInputs(new Vector2(-9000, -9000), 0));
                 var k = c.CurrentBehavior;
                 if (mine.Contains(k)) seen.Add(k);
                 else Assert.True(!allFlourishes.Contains(k), $"{variant} must never play another variant's flourish ({k})");
             }
-            Assert.True(mine.All(seen.Contains), $"{variant} never played all of its own idle flourishes within 20 simulated minutes");
+            Assert.True(mine.All(seen.Contains), $"{variant} never played all of its own idle flourishes within 30 simulated minutes");
         }
     }
 

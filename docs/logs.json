@@ -130,6 +130,10 @@
     {
       "date": "2026-11-04",
       "summary": "Added a second handful of per-variant idle flourishes (ROADMAP 41, still left open): Blue's gentle humming, Red's quiet window-scan, and Green's dismissive turning-away, wired the same way as the first handful. Still open from the spec: Blue admiring something, Red checking on everyone, Green's challenging pose."
+    },
+    {
+      "date": "2026-11-04",
+      "summary": "Added the third and final handful of per-variant idle flourishes, completing ROADMAP 41: Blue briefly admiring something, Red checking on everyone, and Green's challenging pose. All nine flourishes named in the roadmap's example list are now in place. Bumped the simulated window in Alone_EventuallyLooksForCompany's test since Searching is now one of more competing idle-weighted options than before."
     }
   ]
 }

@@ -226,7 +226,7 @@ notifications. Eligibility already excludes paused/asleep/cross-monitor/mid-acti
   on, with a graceful no-op fallback the same way `SystemActivityDetector` degrades. Revisit if
   either packaging becomes worthwhile for other reasons, or someone confirms a current, stable
   window signature to key off of.
-- [ ] **41. More unique per-variant idle flourishes.** The spec lists many small per-personality
+- [x] **41. More unique per-variant idle flourishes.** The spec lists many small per-personality
   animations beyond what exists today (e.g. Blue: shy hiding, gentle humming, briefly admiring
   something; Red: confident hovering, inspecting active windows, checking on everyone; Green:
   challenging poses, mischievous staring, turning away when uninterested). Add a handful at a
@@ -244,8 +244,14 @@ notifications. Eligibility already excludes paused/asleep/cross-monitor/mid-acti
   interior rectangle.
   Second handful landed: Blue's gentle humming (`BehaviorKind.Humming`), Red's quiet window-scan
   (`BehaviorKind.Inspecting`), and Green's dismissive turning-away (`BehaviorKind.Aloof`), wired the
-  same way as the first handful. Still open from the spec: Blue's briefly-admiring-something beat,
-  Red's checking-on-everyone beat, and Green's challenging-pose beat.
+  same way as the first handful. Third and final handful landed: Blue's briefly-admiring-something
+  (`BehaviorKind.Admiring`), Red's checking-on-everyone (`BehaviorKind.Checking`), and Green's
+  challenging pose (`BehaviorKind.Challenging`) — all nine flourishes named in the roadmap's example
+  list are now in place. Along the way, an existing test (`Alone_EventuallyLooksForCompany...`)
+  needed a longer simulated window before the already-rare `Searching` pick reliably showed up,
+  since it's now one of more competing idle-weighted options than before — not a behavior change,
+  just more things that can happen first. The full living design spec may still have smaller beats
+  not reproduced here; revisit if it becomes a priority again.
 - [ ] **42. More environmental/emergent behaviors.** From the spec's list, still open: resting
   preferentially at a remembered favorite spot, occasionally visiting another Puffling's favorite
   spot, inspecting a desktop icon without activating it, a rare trip-and-recover stumble, and a

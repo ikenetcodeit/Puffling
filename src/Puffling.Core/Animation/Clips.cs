@@ -59,6 +59,9 @@ public static class Clips
     public static readonly IClip Humming = new HummingClip();
     public static readonly IClip Inspecting = new InspectingClip();
     public static readonly IClip Aloof = new AloofClip();
+    public static readonly IClip Admiring = new AdmiringClip();
+    public static readonly IClip Checking = new CheckingClip();
+    public static readonly IClip Challenging = new ChallengingClip();
     private static readonly IClip RedMove = new SignatureClip(CompanionVariant.Red);
     private static readonly IClip BlueMove = new SignatureClip(CompanionVariant.Blue);
     private static readonly IClip GreenMove = new SignatureClip(CompanionVariant.Green);
@@ -742,6 +745,65 @@ public static class Clips
             p.Pitch = -0.04f * turn;
             p.LookX = -0.8f * turn; p.LookY = -0.1f;
             p.TentacleAmplitude = 0.1f; p.TentacleSpeed = 1.2f; p.TentacleSpread = -0.1f * turn;
+            return p;
+        }
+    }
+
+    /// <summary>Blue idle flourish: briefly admiring something off to the side — heart eyes for a
+    /// moment, then back to normal.</summary>
+    private sealed class AdmiringClip : IClip
+    {
+        public string Name => "Admiring";
+        public float? Duration => 2.6f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            float hold = MathF.Min(1f, t / 0.6f);
+            p.Expression = Expression.Love;
+            p.Yaw = 0.3f * hold;
+            p.Pitch = -0.08f * hold;
+            p.LookX = 0.6f * hold; p.LookY = -0.3f * hold;
+            p.Roll = 0.06f * MathF.Sin(t * 2f) * hold;
+            p.TentacleAmplitude = 0.1f; p.TentacleSpeed = 1.5f; p.TentacleSpread = 0.05f;
+            p.GoggleWiggle = 0.15f * MathF.Sin(t * 3f) * hold;
+            return p;
+        }
+    }
+
+    /// <summary>Red idle flourish: a slow, wide sweep as if checking on everyone — a caring
+    /// leader's habit, not a search for anything in particular.</summary>
+    private sealed class CheckingClip : IClip
+    {
+        public string Name => "Checking";
+        public float? Duration => 3.2f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            p.Expression = Expression.Happy;
+            float sweep = MathF.Sin(t * 0.9f);
+            p.Yaw = 0.35f * sweep;
+            p.LookX = 0.5f * sweep;
+            p.Pitch = -0.03f;
+            p.TentacleAmplitude = 0.1f; p.TentacleSpeed = 1.3f;
+            return p;
+        }
+    }
+
+    /// <summary>Green idle flourish: a bold, puffed-up stance daring something to happen — not
+    /// aggressive, just supremely unbothered.</summary>
+    private sealed class ChallengingClip : IClip
+    {
+        public string Name => "Challenging";
+        public float? Duration => 2.2f;
+        public Pose Evaluate(float t, in ClipContext c)
+        {
+            var p = Pose.Rest;
+            float puff = MathF.Min(1f, t / 0.5f);
+            p.Expression = Expression.Excited;
+            p.Squash = 1f + 0.1f * puff;
+            p.Pitch = -0.1f * puff;
+            p.TentacleAmplitude = 0.3f * puff; p.TentacleSpeed = 3f; p.TentacleSpread = 0.4f * puff;
+            p.GoggleWiggle = 0.1f * MathF.Sin(t * 5f) * puff;
             return p;
         }
     }

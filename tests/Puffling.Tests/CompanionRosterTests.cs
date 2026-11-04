@@ -230,7 +230,9 @@ public static class CompanionRosterTests
         var c = new Companion(new CompanionSettings(), geometry, seed: 20);
         c.Brain.CompanionsPresent = 1;
         bool searched = false;
-        for (int i = 0; i < 30 * 90 && !searched; i++)
+        // Generous window: Searching is just one of many idle-weighted options now (including the
+        // per-variant flourishes), so "eventually" can take longer than it used to.
+        for (int i = 0; i < 30 * 300 && !searched; i++)
         {
             c.Tick(1 / 30f, new FrameInputs(new Vector2(5, 5), 0));
             searched = c.CurrentBehavior == BehaviorKind.Searching;

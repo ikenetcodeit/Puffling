@@ -14,6 +14,7 @@ public enum BehaviorKind
     AgentWaiting, AgentSucceeded, AgentFailed,
     Shy, Hovering, Mischievous,
     Humming, Inspecting, Aloof,
+    Admiring, Checking, Challenging,
 }
 
 public static class BehaviorKinds
